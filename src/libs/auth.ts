@@ -8,6 +8,7 @@ import EmailProvider from "next-auth/providers/email";
 import { getServerSession } from "next-auth";
 import bcrypt from "bcrypt";
 import { User } from "@prisma/client";
+import crypto from "crypto";
 
 declare module "next-auth" {
 	interface Session extends DefaultSession {
@@ -22,7 +23,7 @@ export const authOptions: NextAuthOptions = {
 		verifyRequest: "/auth/verify-request",
 	},
 	adapter: PrismaAdapter(prisma),
-	secret: process.env.SECRET,
+	secret: process.env.NEXTAUTH_SECRET!,
 	session: {
 		strategy: "jwt",
 		maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -213,15 +214,28 @@ export const authOptions: NextAuthOptions = {
 		},
 
 		async redirect({ url, baseUrl }) {
-			// After successful email verification, redirect to dashboard
+			// Handle email verification callback
 			if (url.includes('/api/auth/callback/email')) {
-				return `${baseUrl}/dashboard`;
+				const callbackUrl = new URL(url).searchParams.get('callbackUrl');
+				if (callbackUrl && callbackUrl.startsWith(baseUrl)) {
+					// Get user role from session
+					const session = await getAuthSession();
+					if (session?.user) {
+						return session.user.role === "ADMIN" ? `${baseUrl}/admin` : `${baseUrl}/user`;
+					}
+				}
+				// Default to user dashboard if no session yet
+				return `${baseUrl}/user`;
+			}
+			
+			// Handle error pages
+			if (url.startsWith('/auth/error')) {
+				return url;
 			}
 			
 			// Default redirect rules
 			if (url.startsWith("/")) return `${baseUrl}${url}`;
 			if (new URL(url).origin === baseUrl) return url;
-			if (url.startsWith("http://localhost:3000")) return url;
 			return baseUrl;
 		},
 

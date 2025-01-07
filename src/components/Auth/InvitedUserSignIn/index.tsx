@@ -15,6 +15,7 @@ export default function InvitedUserSignIn() {
       const result = await signIn("email", {
         email: email.toLowerCase(),
         redirect: false,
+        callbackUrl: `${window.location.origin}/dashboard`
       });
 
       if (result?.error) {

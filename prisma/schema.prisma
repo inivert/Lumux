@@ -63,6 +63,7 @@ model User {
   emailVerified         DateTime?
   image                 String?
   password              String?
+  hasPassword           Boolean      @default(false)
   passwordResetToken    String?      @unique
   passwordResetTokenExp DateTime?
   role                  String?      @default("USER")
