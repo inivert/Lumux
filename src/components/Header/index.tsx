@@ -13,6 +13,7 @@ import Account from "./Account";
 import { useSession } from "next-auth/react";
 import { onScroll } from "@/libs/scrollActive";
 import { usePathname } from "next/navigation";
+import Logo from "../Common/Logo";
 
 const Header = () => {
 	const [stickyMenu, setStickyMenu] = useState(false);
@@ -60,14 +61,7 @@ const Header = () => {
 			>
 				<div className='relative mx-auto max-w-[1170px] items-center justify-between px-4 sm:px-8 xl:flex xl:px-0'>
 					<div className='flex w-full items-center justify-between xl:w-4/12'>
-						<Link href='/'>
-							<Image
-								src={logoLight}
-								alt='Logo'
-								className='hidden w-full dark:block'
-							/>
-							<Image src={logo} alt='Logo' className='w-full dark:hidden' />
-						</Link>
+						<Logo />
 
 						{/* <!-- Hamburger Toggle BTN --> */}
 						<button

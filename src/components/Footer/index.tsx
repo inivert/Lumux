@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Logo from "../Common/Logo";
 
 const Footer = () => {
 	return (
@@ -9,14 +10,7 @@ const Footer = () => {
 				{/* <!-- footer menu start --> */}
 				<div className='flex flex-wrap gap-10 lg:justify-between xl:flex-nowrap xl:gap-20'>
 					<div className='w-full max-w-[275px]'>
-						<Link href='/'>
-							<Image
-								src='/images/logo/logo-light.svg'
-								alt='Logo'
-								width={214}
-								height={40}
-							/>
-						</Link>
+						<Logo />
 						<p className='mt-5 text-gray-5'>
 							© Your SaaS - Demo SaaS website created using SaaSBold
 						</p>
