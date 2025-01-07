@@ -66,19 +66,25 @@ export async function POST(req: Request) {
       return new NextResponse("Invitation already sent", { status: 400 });
     }
 
-    console.log("Creating invitation for:", email);
+    // Create user first
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        role,
+        emailVerified: new Date(),
+      }
+    });
 
-    // Create new invitation
+    // Create new invitation linked to user
     const invitation = await prisma.invitation.create({
       data: {
         email: email.toLowerCase(),
         role,
         token: generateToken(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        userId: user.id // Link invitation to user
       }
     });
-
-    console.log("Invitation created:", invitation);
 
     try {
       // Send invitation email
@@ -87,8 +93,6 @@ export async function POST(req: Request) {
         role,
       });
 
-      console.log("Email sent successfully:", emailResult);
-
       return NextResponse.json({
         ...invitation,
         emailSent: true
@@ -96,7 +100,7 @@ export async function POST(req: Request) {
     } catch (emailError) {
       console.error("Failed to send invitation email:", emailError);
       
-      // Delete the invitation if email fails
+      // Delete the invitation if email fails, but keep the user
       await prisma.invitation.delete({
         where: { id: invitation.id }
       });
@@ -125,6 +129,16 @@ export async function DELETE(req: Request) {
       return new NextResponse("Invitation ID required", { status: 400 });
     }
 
+    // First get the invitation to check if it's accepted
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId }
+    });
+
+    if (!invitation) {
+      return new NextResponse("Invitation not found", { status: 404 });
+    }
+
+    // Delete only the invitation, not the user
     await prisma.invitation.delete({
       where: { id: invitationId }
     });

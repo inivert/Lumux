@@ -1,35 +1,32 @@
-import "../../styles/satoshi.css";
-import "react-quill/dist/quill.snow.css";
-import "../../styles/globals.css";
-import { Providers } from "./providers";
-import ToastContext from "../context/ToastContext";
-import NextTopLoader from "nextjs-toploader";
-import Loader from "@/components/Common/PreLoader";
-import FooterWrapper from "@/components/Footer/FooterWrapper";
-import { HeaderWrapper } from "@/components/Header/HeaderWrapper";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/libs/auth";
+import { redirect } from "next/navigation";
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import { adminMenuData, userMenuData } from "@/staticData/sidebarData";
 
-export default function RootLayout({
+export default async function DashboardLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
+	const session = await getServerSession(authOptions);
+
+	if (!session) {
+		redirect("/auth/signin");
+	}
+
+	const menuData = session.user.role === "admin" ? adminMenuData : userMenuData;
+
 	return (
-		<>
-			<Loader />
-			<>
-				<ToastContext />
-				<Providers>
-					<NextTopLoader
-						color='#635BFF'
-						crawlSpeed={300}
-						showSpinner={false}
-						shadow='none'
-					/>
-					<HeaderWrapper />
+		<div className='flex h-screen overflow-hidden'>
+			<Sidebar menuData={menuData} />
+			<div className='relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden'>
+				<Header />
+				<main className='mx-auto w-full max-w-screen-2xl p-4 md:p-6 2xl:p-10'>
 					{children}
-					<FooterWrapper />
-				</Providers>
-			</>
-		</>
+				</main>
+			</div>
+		</div>
 	);
 }

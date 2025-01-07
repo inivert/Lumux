@@ -1,113 +1,102 @@
 "use client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import InputGroup from "@/components/Common/Dashboard/InputGroup";
-import FormButton from "@/components/Common/Dashboard/FormButton";
-import Loader from "@/components/Common/Loader";
-import toast from "react-hot-toast";
-import axios from "axios";
-import { useSearchParams, useRouter } from "next/navigation";
-import z from "zod";
+import { toast } from "sonner";
 
-const schema = z.object({
-	password: z
-		.string()
-		.min(8, { message: "Password must be at least 8 characters long" })
-		.refine((val) => /[A-Z]/.test(val), {
-			message: "Password must contain at least one uppercase letter.",
-		})
-		.refine((val) => /[a-z]/.test(val), {
-			message: "Password must contain at least one lowercase letter.",
-		})
-		.refine((val) => /\d/.test(val), {
-			message: "Password must contain at least one number.",
-		})
-		.refine((val) => /[@$!%*?&]/.test(val), {
-			message: "Password must contain at least one special character.",
-		}),
+const formSchema = z.object({
+	email: z.string().email({
+		message: "Please enter a valid email address.",
+	}),
 });
 
-const InvitedSignin = () => {
-	const [password, setPassword] = useState("");
-	const [loading, setLoading] = useState(false);
-
+export default function InvitedSignin() {
+	const [isLoading, setIsLoading] = useState(false);
 	const router = useRouter();
-	const searchParams = useSearchParams();
-	const token = searchParams.get("token");
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setPassword(e.target.value);
-	};
+	const form = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			email: "",
+		},
+	});
 
-	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-
-		setLoading(true);
-
-		const result = schema.safeParse({ password });
-
-		if (!result.success) {
-			toast.error(result.error.issues[0].message);
-			setLoading(false);
-			return;
-		}
-
+	async function onSubmit(values: z.infer<typeof formSchema>) {
 		try {
-			const res = await axios.post(`/api/user/invite/signin`, {
-				password,
-				token,
+			setIsLoading(true);
+
+			// First check if the email has a valid invitation
+			const checkResponse = await fetch("/api/user/invite/check", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(values),
 			});
 
-			if (res.status === 200) {
-				toast.success("Account created successfully");
-				setPassword("");
-				setLoading(false);
-				router.push("/auth/signin");
+			if (!checkResponse.ok) {
+				const error = await checkResponse.text();
+				throw new Error(error);
 			}
-		} catch (error: any) {
-			toast.error(error.response.data);
-			setPassword("");
-			setLoading(false);
-			router.push("/auth/signin");
+
+			// Sign in with credentials
+			const result = await signIn("credentials", {
+				email: values.email,
+				password: "", // Empty password for first-time login
+				redirect: false,
+			});
+
+			if (result?.error) {
+				throw new Error(result.error);
+			}
+
+			toast.success("Please set up your password in settings");
+			router.push("/dashboard");
+		} catch (error) {
+			console.error(error);
+			toast.error(error instanceof Error ? error.message : "Something went wrong");
+		} finally {
+			setIsLoading(false);
 		}
-	};
+	}
 
 	return (
-		<div className='mx-auto w-full max-w-[400px] px-4 py-10'>
-			<div className='mb-7.5 text-center'>
-				<h3 className='mb-4 font-satoshi text-heading-5 font-bold text-dark dark:text-white'>
-					Invited Signin
-				</h3>
-				<p className='text-base dark:text-gray-5'>
-					Enter your password to sign in
-				</p>
-			</div>
-
-			<form onSubmit={handleSubmit}>
-				<div className='mb-5 space-y-4'>
-					<InputGroup
-						label='Password'
-						placeholder='Enter your password'
-						type='password'
-						name='password'
-						required
-						height='50px'
-						value={password}
-						handleChange={handleChange}
-					/>
-
-					<FormButton height='50px'>
-						{loading ? (
-							<>
-								Sign in <Loader style='border-white dark:border-dark' />
-							</>
-						) : (
-							"Sign in"
-						)}
-					</FormButton>
-				</div>
+		<Form {...form}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+				<FormField
+					control={form.control}
+					name='email'
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Email</FormLabel>
+							<FormControl>
+								<Input
+									placeholder='Enter your email'
+									{...field}
+									disabled={isLoading}
+								/>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+				<Button type='submit' className='w-full' disabled={isLoading}>
+					{isLoading ? "Verifying..." : "Continue"}
+				</Button>
 			</form>
-		</div>
+		</Form>
 	);
-};
-
-export default InvitedSignin;
+}

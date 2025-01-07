@@ -1,14 +1,23 @@
+"use client";
 import { signIn } from "next-auth/react";
-import { integrations, messages } from "../../../integrations.config";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function GoogleSigninButton({ text }: { text: string }) {
-	const handleClick = () => {
-		if (!integrations.isAuthEnabled) {
-			return toast.error(messages.auth);
-		}
+	const handleClick = async () => {
+		try {
+			const result = await signIn("google", { callbackUrl: "/", redirect: false });
 
-		signIn("google", { callbackUrl: "/admin" });
+			if (result?.error) {
+				if (result.error.includes("invitation")) {
+					toast.error("You need an invitation to sign in. Please contact an administrator.");
+				} else {
+					toast.error("Failed to sign in with Google");
+				}
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error("Failed to sign in with Google");
+		}
 	};
 
 	return (

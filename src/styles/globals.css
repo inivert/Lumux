@@ -125,38 +125,6 @@
 	@apply !pl-1.5;
 }
 
-.blog-details p {
-	@apply mb-6 dark:text-slate-400;
-}
-
-.blog-details h2 {
-	@apply mb-4.5 font-satoshi text-3xl font-bold -tracking-[1px] text-black dark:text-white;
-}
-
-.blog-details h3 {
-	@apply mb-4.5 font-satoshi text-2xl font-bold -tracking-[1px] text-black dark:text-white;
-}
-
-.blog-details h4 {
-	@apply mb-4.5 font-satoshi text-xl font-bold -tracking-[1px] text-black dark:text-white;
-}
-
-.blog-details h5 {
-	@apply mb-4.5 font-satoshi text-lg font-bold -tracking-[1px] text-black dark:text-white;
-}
-
-.blog-details img {
-	@apply rounded-[15px];
-}
-
-.blog-details blockquote {
-	@apply my-9 mb-6 border-l-[3px] border-primary py-5 pl-7.5 font-medium italic text-black dark:text-white;
-}
-
-.blog-details strong {
-	@apply dark:text-gray-5;
-}
-
 .active {
 	@apply bg-primary/5 text-primary dark:bg-white/5 dark:text-white;
 }

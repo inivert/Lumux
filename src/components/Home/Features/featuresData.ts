@@ -5,7 +5,7 @@ const featuresData: FeatureItem[] = [
 		id: 1,
 		title: "Ready-to-Use Integrations",
 		description:
-			"Database (Postgres with Prisma ORM), Auth (NextAuth), Payments (Stripe), Sanity (Blog), MailChimp (Newsletter), OpenAI, Email, and Many More",
+			"Database (Postgres with Prisma ORM), Auth (NextAuth), Payments (Stripe), MailChimp (Newsletter), OpenAI, Email, and Many More",
 		icon: "/images/features/features-icon-01.svg",
 	},
 	{

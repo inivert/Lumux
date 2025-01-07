@@ -1,5 +1,4 @@
 const integrations = {
-	isSanityEnabled: false,
 	isOpenAIEnabled: false,
 	isAlgoliaEnabled: false,
 	isMailchimpEnabled: false,
@@ -8,20 +7,6 @@ const integrations = {
 };
 
 const messages = {
-	sanity: (
-		<div style={{ whiteSpace: "pre-wrap" }}>
-			Sanity is not enabled. Follow the{" "}
-			<a
-				href='https://codelumus.com/docs/integrations'
-				className='text-primary underline'
-				target='_blank'
-				rel='noopener noreferrer'
-			>
-				documentation
-			</a>{" "}
-			to enable it.
-		</div>
-	),
 	payment: (
 		<div style={{ whiteSpace: "pre-wrap" }}>
 			Payment is not enabled. Follow the{" "}

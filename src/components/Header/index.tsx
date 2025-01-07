@@ -185,15 +185,9 @@ const Header = () => {
 							<div className="flex items-center space-x-2">
 								<Link
 									href='/auth/signin'
-									className='px-4 py-2 font-satoshi text-base font-medium text-gray-600 hover:text-primary dark:text-gray-300'
+									className='flex items-center justify-center rounded-lg bg-primary px-7 py-2.5 font-satoshi text-base font-medium text-white duration-300 hover:bg-primary-dark'
 								>
 									Sign In
-								</Link>
-								<Link
-									href='/auth/signup'
-									className='rounded-lg bg-primary px-4 py-2 font-satoshi text-base font-medium text-white hover:bg-primary-dark'
-								>
-									Sign Up
 								</Link>
 							</div>
 						)}

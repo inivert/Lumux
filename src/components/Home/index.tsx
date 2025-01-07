@@ -6,7 +6,6 @@ import Counter from "./Counter";
 import CallToAction from "./CallToAction";
 import Pricing from "./Pricing";
 import FAQ from "./FAQ";
-import Blog from "./Blog";
 
 import { integrations } from "../../../integrations.config";
 
@@ -21,7 +20,6 @@ const Home = () => {
 			<CallToAction />
 			<Pricing />
 			<FAQ />
-			{integrations?.isSanityEnabled && <Blog />}
 		</>
 	);
 };

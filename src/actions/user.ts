@@ -32,20 +32,18 @@ export async function updateUser(data: any) {
 	});
 }
 
-export async function deleteUser(user: any) {
-	if (user?.email?.includes("demo-")) {
-		return new Error("Can't delete demo user");
-	}
+export async function deleteUser(id: string) {
+	try {
+		const user = await prisma.user.delete({
+			where: {
+				id,
+			},
+		});
 
-	if (!user) {
-		return new Error("User not found");
+		return user;
+	} catch (error) {
+		return new Error("Failed to delete user");
 	}
-
-	return await prisma.user.delete({
-		where: {
-			email: user?.email.toLowerCase() as string,
-		},
-	});
 }
 
 export async function serchUser(email: string) {
