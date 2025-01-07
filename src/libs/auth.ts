@@ -18,11 +18,13 @@ declare module "next-auth" {
 export const authOptions: NextAuthOptions = {
 	pages: {
 		signIn: "/auth/signin",
+		error: "/auth/error",
 	},
 	adapter: PrismaAdapter(prisma),
 	secret: process.env.SECRET,
 	session: {
 		strategy: "jwt",
+		maxAge: 30 * 24 * 60 * 60, // 30 days
 	},
 
 	providers: [
@@ -35,25 +37,21 @@ export const authOptions: NextAuthOptions = {
 				username: { label: "Username", type: "text", placeholder: "Jhon Doe" },
 			},
 
-			async authorize(credentials) {
-				// check to see if eamil and password is there
+			async authorize(credentials, req) {
 				if (!credentials?.email || !credentials?.password) {
-					throw new Error("Please enter an email or password");
+					throw new Error("Please enter an email and password");
 				}
 
-				// check to see if user already exist
 				const user = await prisma.user.findUnique({
 					where: {
-						email: credentials.email,
+						email: credentials.email.toLowerCase(),
 					},
 				});
 
-				// if user was not found
 				if (!user || !user?.password) {
-					throw new Error("No user found");
+					throw new Error("No user found with this email");
 				}
 
-				// check to see if passwords match
 				const passwordMatch = await bcrypt.compare(
 					credentials.password,
 					user.password
@@ -167,11 +165,17 @@ export const authOptions: NextAuthOptions = {
 	],
 
 	callbacks: {
-		jwt: async (payload: any) => {
-			const { token, trigger, session } = payload;
-			const user: User = payload.user;
-
-			if (trigger === "update") {
+		async signIn({ user, account, profile, email, credentials }) {
+			return true;
+		},
+		async redirect({ url, baseUrl }) {
+			if (url.startsWith("/")) return `${baseUrl}${url}`;
+			if (new URL(url).origin === baseUrl) return url;
+			if (url.startsWith("http://localhost:3000")) return url;
+			return baseUrl;
+		},
+		async jwt({ token, user, account, profile, trigger, session }) {
+			if (trigger === "update" && session?.user) {
 				return {
 					...token,
 					...session.user,
@@ -187,7 +191,7 @@ export const authOptions: NextAuthOptions = {
 			if (user) {
 				return {
 					...token,
-					uid: user.id,
+					id: user.id,
 					priceId: user.priceId,
 					currentPeriodEnd: user.currentPeriodEnd,
 					subscriptionId: user.subscriptionId,
@@ -199,26 +203,24 @@ export const authOptions: NextAuthOptions = {
 			return token;
 		},
 
-		session: async ({ session, token }) => {
+		async session({ session, token, user }) {
 			if (session?.user) {
 				return {
 					...session,
 					user: {
 						...session.user,
-						id: token.sub,
+						id: token.id || token.sub,
 						priceId: token.priceId,
 						currentPeriodEnd: token.currentPeriodEnd,
 						subscriptionId: token.subscriptionId,
 						role: token.role,
-						image: token.picture,
+						image: token.picture || token.image,
 					},
 				};
 			}
 			return session;
 		},
 	},
-
-	// debug: process.env.NODE_ENV === "developement",
 };
 
 export const getAuthSession = async () => {

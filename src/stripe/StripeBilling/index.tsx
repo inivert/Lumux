@@ -1,8 +1,10 @@
-import { pricingData } from "@/pricing/pricingData";
+import { pricingData } from "../../pricing/pricingData";
 import PriceItem from "./PriceItem";
-import SectionHeader from "@/components/Common/SectionHeader";
+import SectionHeader from "../../components/Common/SectionHeader";
+import { useState } from "react";
 
 const Pricing = ({ isBilling }: { isBilling?: boolean }) => {
+	const [showYearly, setShowYearly] = useState(false);
 	const mainPlan = pricingData.find(plan => !plan.isAddon);
 	const addons = pricingData.filter(plan => plan.isAddon);
 
@@ -13,10 +15,37 @@ const Pricing = ({ isBilling }: { isBilling?: boolean }) => {
 				className='overflow-hidden rounded-10 bg-white py-15 dark:bg-[#131a2b] md:px-15'
 			>
 				{!isBilling && (
-					<SectionHeader
-						title={"Simple Pricing with Powerful Add-ons"}
-						description='Choose our core plan and enhance it with the add-ons that suit your needs.'
-					/>
+					<>
+						<SectionHeader
+							title={"Simple Pricing with Powerful Add-ons"}
+							description='Choose our core plan and enhance it with the add-ons that suit your needs.'
+						/>
+						<div className="flex items-center justify-center mb-8">
+							<div className="relative flex items-center p-1 bg-gray-100 rounded-full">
+								<button
+									onClick={() => setShowYearly(false)}
+									className={`px-4 py-2 text-sm rounded-full transition-all duration-200 ${
+										!showYearly
+											? "bg-white text-primary shadow-sm"
+											: "text-gray-500 hover:text-gray-700"
+									}`}
+								>
+									Monthly
+								</button>
+								<button
+									onClick={() => setShowYearly(true)}
+									className={`px-4 py-2 text-sm rounded-full transition-all duration-200 ${
+										showYearly
+											? "bg-white text-primary shadow-sm"
+											: "text-gray-500 hover:text-gray-700"
+									}`}
+								>
+									Yearly
+									<span className="ml-1 text-xs text-green-500">Save 20%</span>
+								</button>
+							</div>
+						</div>
+					</>
 				)}
 
 				<div className='mx-auto w-full max-w-[1170px] px-4 sm:px-8 xl:px-0'>
@@ -31,6 +60,7 @@ const Pricing = ({ isBilling }: { isBilling?: boolean }) => {
 									<PriceItem
 										plan={mainPlan}
 										isBilling={isBilling}
+										showYearly={showYearly}
 									/>
 								</div>
 							</div>
@@ -48,6 +78,7 @@ const Pricing = ({ isBilling }: { isBilling?: boolean }) => {
 									plan={addon}
 									key={key}
 									isBilling={isBilling}
+									showYearly={showYearly}
 								/>
 							))}
 						</div>

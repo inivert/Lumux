@@ -1,6 +1,7 @@
 import Hero from "./Hero";
 import Features from "./Features";
 import FeaturesWithImage from "./FeaturesWithImage";
+import FaqSection from "@/components/Common/FaqSection";
 import Counter from "./Counter";
 import CallToAction from "./CallToAction";
 import Pricing from "./Pricing";
@@ -15,6 +16,7 @@ const Home = () => {
 			<Hero />
 			<Features />
 			<FeaturesWithImage />
+			<FaqSection />
 			<Counter />
 			<CallToAction />
 			<Pricing />

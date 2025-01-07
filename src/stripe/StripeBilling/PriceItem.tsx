@@ -1,26 +1,27 @@
 "use client";
 import axios from "axios";
-import { Price } from "@/types/priceItem";
+import { Price } from "../../types/priceItem";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { integrations, messages } from "../../../integrations.config";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
-import getUpdatedData from "@/libs/getUpdatedData";
+import getUpdatedData from "../../libs/getUpdatedData";
+import AnimatedPrice from "./AnimatedPrice";
 
 type Props = {
 	plan: Price;
 	isBilling?: boolean;
+	showYearly?: boolean;
 	subscriptionPlan?: any;
 };
 
-const PriceItem = ({ plan, isBilling }: Props) => {
+const PriceItem = ({ plan, isBilling, showYearly }: Props) => {
 	const { data: session, update, status } = useSession();
 	const user = session?.user;
 
 	useEffect(() => {
 		const fetchAndUpdateSession = async () => {
-			console.log(status, session);
 			if (status === "loading") return;
 			if (!user?.email) return;
 			try {
@@ -36,16 +37,14 @@ const PriceItem = ({ plan, isBilling }: Props) => {
 						subscriptionId: data.subscriptionId,
 					},
 				});
-				console.log("Updated session");
 			} catch (error) {
-				console.error("Couldn't update session");
+				console.error("Couldn't update session:", error);
 			}
 		};
 
 		fetchAndUpdateSession();
-	}, []);
+	}, [session, status, update, user?.email]);
 
-	// stripe payment
 	const handleSubscription = async () => {
 		if (!session || !session.user?.id) {
 			window.location.href = '/auth/signin';
@@ -53,27 +52,22 @@ const PriceItem = ({ plan, isBilling }: Props) => {
 		}
 
 		if (!integrations?.isPaymentsEnabled) {
-			toast.error(messages?.payment);
+			toast.error(messages?.payment || "Payments are not enabled");
 			return;
 		}
 
-		if (!plan.priceId) {
+		const priceId = showYearly ? plan.yearlyPriceId : plan.priceId;
+
+		if (!priceId) {
 			toast.error("Invalid price configuration");
 			return;
 		}
 
 		try {
-			console.log("Initiating payment for:", {
-				userId: session.user.id,
-				priceId: plan.priceId
-			});
-
 			const res = await axios.post("/api/stripe/payment", {
 				userId: session.user.id,
-				priceId: plan.priceId
+				priceId
 			});
-
-			console.log("Payment response:", res.data);
 
 			if (res.data.error) {
 				toast.error(res.data.error.details || res.data.error);
@@ -87,21 +81,16 @@ const PriceItem = ({ plan, isBilling }: Props) => {
 
 			window.location.href = res.data.url;
 		} catch (err: any) {
-			console.error("Payment error:", {
-				message: err.message,
-				response: err.response?.data
-			});
-			
 			const errorMessage = err.response?.data?.details || 
-								err.response?.data?.error || 
-								"Failed to process payment. Please try again.";
+							   err.response?.data?.error || 
+							   "Failed to process payment. Please try again.";
 			
 			toast.error(errorMessage);
 		}
 	};
 
 	const active = plan?.active;
-	const isSubscribed = session && session?.user?.priceId === plan?.priceId;
+	const isSubscribed = Boolean(session?.user?.priceId && session.user.priceId === (showYearly ? plan?.yearlyPriceId : plan?.priceId));
 
 	const getButtonText = () => {
 		if (!session) return 'Sign in to Subscribe';
@@ -126,57 +115,86 @@ const PriceItem = ({ plan, isBilling }: Props) => {
 
 	return (
 		<div
-			className={`relative rounded-[20px] p-6 shadow-dropdown ${
+			className={`relative flex flex-col h-full rounded-2xl p-8 transition-all duration-200 hover:shadow-lg ${
 				plan.isAddon
-					? 'bg-white dark:bg-gray-dark'
+					? 'bg-white dark:bg-gray-dark border border-gray-200 dark:border-gray-700'
 					: active && !isBilling
-					? 'bg-primary'
-					: 'bg-white dark:bg-gray-dark'
+					? 'bg-primary border-2 border-primary'
+					: 'bg-white dark:bg-gray-dark border border-gray-200 dark:border-gray-700'
 			}`}
 		>
 			{active && !plan.isAddon && (
 				<span
-					className={`absolute right-4.5 top-4.5 inline-flex rounded-[5px] px-3 py-[5px] font-satoshi font-medium  ${
+					className={`absolute -top-3 left-1/2 transform -translate-x-1/2 inline-flex rounded-full px-4 py-1 text-sm font-medium ${
 						isBilling
-							? 'bg-primary/10 text-primary dark:bg-white/10 dark:text-white'
-							: 'bg-white/10 text-white'
+							? 'bg-primary text-white'
+							: 'bg-white text-primary shadow-sm border border-primary'
 					}`}
 				>
-					Popular
+					Most Popular
 				</span>
 			)}
 
-			<div className='mb-5 flex items-center gap-4'>
-				<div
-					className={`flex h-14 w-full max-w-[56px] items-center justify-center rounded-xl ${
-						plan.isAddon
-							? 'bg-primary/10'
-							: active && !isBilling
-							? 'bg-white/10'
-							: 'bg-primary/10'
-					}`}
-				>
-					<Image
-						src={plan?.icon}
-						alt={plan?.nickname}
-						width={28}
-						height={28}
-					/>
-				</div>
-				<div>
-					<span
-						className={`block text-base font-medium ${
+			<div className='mb-6 space-y-4'>
+				<div className='flex items-center gap-4'>
+					<div
+						className={`flex h-12 w-12 items-center justify-center rounded-xl ${
 							plan.isAddon
-								? 'text-gray-600 dark:text-gray-400'
+								? 'bg-primary/10'
 								: active && !isBilling
-								? 'text-white'
-								: 'dark:text-gray-4'
+								? 'bg-white/10'
+								: 'bg-primary/10'
 						}`}
 					>
-						{plan?.subtitle}
-					</span>
-					<h3
-						className={`font-satoshi text-xl font-bold ${
+						<Image
+							src={plan?.icon}
+							alt={plan?.nickname}
+							width={24}
+							height={24}
+							className="opacity-90"
+						/>
+					</div>
+					<div>
+						<h3
+							className={`font-satoshi text-xl font-bold mb-0.5 ${
+								plan.isAddon
+									? 'text-black dark:text-white'
+									: active && !isBilling
+									? 'text-white'
+									: 'text-black dark:text-white'
+							}`}
+						>
+							{plan.nickname}
+						</h3>
+						<span
+							className={`block text-sm font-medium ${
+								plan.isAddon
+									? 'text-gray-600 dark:text-gray-400'
+									: active && !isBilling
+									? 'text-white/80'
+									: 'text-gray-600 dark:text-gray-400'
+							}`}
+						>
+							{plan?.subtitle}
+						</span>
+					</div>
+				</div>
+
+				<p className={`text-sm leading-relaxed ${
+					plan.isAddon
+						? 'text-gray-600 dark:text-gray-400'
+						: active && !isBilling
+						? 'text-white/90'
+						: 'text-gray-600 dark:text-gray-400'
+				}`}>
+					{plan?.description}
+				</p>
+			</div>
+
+			<div className="mb-6">
+				<div className="flex items-baseline mb-1">
+					<h4
+						className={`font-satoshi text-3xl font-bold tracking-tight ${
 							plan.isAddon
 								? 'text-black dark:text-white'
 								: active && !isBilling
@@ -184,98 +202,82 @@ const PriceItem = ({ plan, isBilling }: Props) => {
 								: 'text-black dark:text-white'
 						}`}
 					>
-						{plan.nickname}
-					</h3>
+						<AnimatedPrice 
+							value={showYearly ? plan.yearly_unit_amount / 100 : plan.monthly_unit_amount / 100}
+							className="mr-0"
+						/>
+					</h4>
+					<span
+						className={`ml-2 text-sm font-medium ${
+							plan.isAddon
+								? 'text-gray-500 dark:text-gray-400'
+								: active && !isBilling
+								? 'text-white/80'
+								: 'text-gray-500 dark:text-gray-400'
+						}`}
+					>
+						/{showYearly ? 'year' : 'month'}
+					</span>
 				</div>
+				{showYearly && (
+					<p className={`text-sm font-medium ${
+						plan.isAddon
+							? 'text-primary'
+							: active && !isBilling
+							? 'text-white/90'
+							: 'text-primary'
+					}`}>
+						Save 20% with yearly billing
+					</p>
+				)}
 			</div>
 
-			<p className={`text-sm ${
-				plan.isAddon
-					? 'text-gray-600 dark:text-gray-400'
-					: active && !isBilling
-					? 'text-white'
-					: 'dark:text-gray-4'
-			}`}>
-				{plan?.description}
-			</p>
-
-			{/* <!-- divider --> */}
-			<div
-				className={`my-4 h-px w-full ${
-					plan.isAddon
-						? 'bg-gray-200 dark:bg-gray-700'
-						: active && !isBilling
-						? 'bg-white/30'
-						: 'bg-stroke dark:bg-stroke-dark'
-				}`}
-			></div>
-
-			<h4
-				className={`mb-4 font-satoshi text-2xl font-bold ${
-					plan.isAddon
-						? 'text-black dark:text-white'
-						: active && !isBilling
-						? 'text-white'
-						: 'text-[#170F49] dark:text-white'
-				}`}
-			>
-				${plan?.unit_amount / 100}
-				<span
-					className={`ml-1 text-base font-medium ${
-						plan.isAddon
-							? 'text-gray-600 dark:text-gray-400'
-							: active && !isBilling
-							? 'text-white'
-							: 'text-gray-6 dark:text-white'
-					}`}
-				>
-					/month
-				</span>
-			</h4>
-
-			<ul className='mb-6 flex flex-col gap-2'>
-				{plan?.includes.map((feature, key) => (
-					<li className='flex items-center gap-2 text-sm' key={key}>
-						<svg
-							width='16'
-							height='16'
-							viewBox='0 0 22 22'
-							fill='none'
-							className={
-								plan.isAddon
-									? 'text-primary'
-									: active && !isBilling
-									? 'text-white'
-									: 'text-primary dark:text-white'
-							}
-							xmlns='http://www.w3.org/2000/svg'
-						>
-							<path
-								fillRule='evenodd'
-								clipRule='evenodd'
-								d='M20.1668 11C20.1668 16.0626 16.0628 20.1667 11.0002 20.1667C5.93755 20.1667 1.8335 16.0626 1.8335 11C1.8335 5.9374 5.93755 1.83334 11.0002 1.83334C16.0628 1.83334 20.1668 5.9374 20.1668 11ZM14.6946 8.22221C14.9631 8.49069 14.9631 8.92599 14.6946 9.19448L10.1113 13.7778C9.84281 14.0463 9.40751 14.0463 9.13903 13.7778L7.30569 11.9445C7.03721 11.676 7.03721 11.2407 7.30569 10.9722C7.57418 10.7037 8.00948 10.7037 8.27797 10.9722L9.62516 12.3194L11.6738 10.2708L13.7224 8.22221C13.9908 7.95372 14.4261 7.95372 14.6946 8.22221Z'
-								fill='currentColor'
-							/>
-						</svg>
-						<span
-							className={
-								plan.isAddon
-									? 'text-gray-600 dark:text-gray-400'
-									: active && !isBilling
-									? 'text-white'
-									: 'dark:text-gray-4'
-							}
-						>
-							{feature}
-						</span>
-					</li>
-				))}
-			</ul>
+			<div className="flex-grow">
+				<ul className='mb-6 space-y-3'>
+					{plan?.includes.map((feature, key) => (
+						<li className='flex items-start gap-3 text-sm' key={key}>
+							<svg
+								width='20'
+								height='20'
+								viewBox='0 0 20 20'
+								fill='none'
+								xmlns="http://www.w3.org/2000/svg"
+								className={`mt-0.5 flex-shrink-0 ${
+									plan.isAddon
+										? 'text-primary'
+										: active && !isBilling
+										? 'text-white'
+										: 'text-primary'
+								}`}
+							>
+								<path
+									d="M16.6663 5L7.49967 14.1667L3.33301 10"
+									stroke="currentColor"
+									strokeWidth="2"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								/>
+							</svg>
+							<span
+								className={
+									plan.isAddon
+										? 'text-gray-700 dark:text-gray-300'
+										: active && !isBilling
+										? 'text-white/90'
+										: 'text-gray-700 dark:text-gray-300'
+								}
+							>
+								{feature}
+							</span>
+						</li>
+					))}
+				</ul>
+			</div>
 
 			<button
 				onClick={handleSubscription}
 				disabled={!session || isSubscribed}
-				className={`w-full rounded-lg px-4 py-2 text-center font-medium transition-all ${getButtonStyle()}`}
+				className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold transition-colors duration-200 ${getButtonStyle()}`}
 			>
 				{getButtonText()}
 			</button>
