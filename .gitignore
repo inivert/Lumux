@@ -9,30 +9,27 @@
 # next.js
 /.next/
 /out/
-.next
 
 # production
 /build
+/dist
+
+# environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
 
 # misc
 .DS_Store
 *.pem
+.vercel
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# local env files
-.env
-.env*.local
-.env.development
-.env.test
-.env.production
-
-# vercel
-.vercel
-.vercel.json
 
 # typescript
 *.tsbuildinfo
@@ -44,32 +41,16 @@ next-env.d.ts
 *.swp
 *.swo
 
-# Prisma
-/prisma/*.db
-/prisma/migrations/
-
-# Logs
-logs
+# Logs and databases
 *.log
+*.sqlite
+*.sqlite3
 
 # Cache
 .cache
 .npm
 
-# Build artifacts
-dist/
-build/
-
 # Temporary files
 *.tmp
 *.temp
-
-# AWS
-.aws/
-
-# Stripe
-.stripe/
-
-# Backup files
-*.bak 
-.vercel
+*.bak
