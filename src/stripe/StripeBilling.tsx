@@ -10,7 +10,7 @@ const StripeBilling = () => {
   const { data: session } = useSession();
 
   return (
-    <section className="w-full py-16 bg-gray-50/50 dark:bg-gray-900/50">
+    <section id="pricing" className="w-full py-16 bg-gray-50/50 dark:bg-gray-900/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center mb-12">
           <h2 className="text-base font-semibold leading-7 text-primary">Pricing</h2>
