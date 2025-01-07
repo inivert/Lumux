@@ -7,9 +7,9 @@ interface Faq {
 const faqData: Faq[] = [
   {
     id: 1,
-    question: "What is Lumux?",
+    question: "What is CodeLumus?",
     answer:
-      "Lumux is a professional website management service that provides custom-built solutions for businesses. We handle everything from core website maintenance to advanced features like payment processing, analytics, and content management.",
+      "CodeLumus is a professional website management service that provides custom-built solutions for businesses. We handle everything from core website maintenance to advanced features like payment processing, analytics, and content management.",
   },
   {
     id: 2,

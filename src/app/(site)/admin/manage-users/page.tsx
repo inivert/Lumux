@@ -1,27 +1,26 @@
-import UsersListContainer from "@/components/Admin/Users";
-import Breadcrumb from "@/components/Common/Dashboard/Breadcrumb";
 import { Metadata } from "next";
+import ManageUsersClient from "./ManageUsersClient";
+import { getAuthSession } from "@/libs/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-	title: `Users - ${process.env.SITE_NAME}`,
-	description: `Users Description`,
+	title: "Manage Users",
+	description: "Manage users and invitations",
 };
 
-export default async function UsersPage(
-    props: {
-        searchParams: Promise<{ filter: string; search: string }>;
-    }
-) {
-    const searchParams = await props.searchParams;
-    const { filter, search } = searchParams;
-    const validFilter =
-		filter === "USER" || filter === "ADMIN" ? filter : undefined;
+export default async function ManageUsersPage() {
+	const session = await getAuthSession();
+	
+	if (!session?.user || session.user.role !== "ADMIN") {
+		redirect("/");
+	}
 
-    return (
-		<>
-			<Breadcrumb pageTitle='Manage Users' />
-
-			<UsersListContainer filter={validFilter} search={search} />
-		</>
+	return (
+		<div className="w-full px-4 py-8">
+			<div className="mx-auto max-w-7xl">
+				<h1 className="mb-8 text-3xl font-bold">Manage Users & Invitations</h1>
+				<ManageUsersClient />
+			</div>
+		</div>
 	);
 }

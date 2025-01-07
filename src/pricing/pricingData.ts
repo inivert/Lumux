@@ -7,10 +7,10 @@ export const pricingData: Price[] = [
     monthly_unit_amount: 59 * 100, // $59/month
     yearly_unit_amount: 59 * 100 * 10 * 0.8, // $472/year (20% off)
     nickname: "Starter",
-    description: "Everything you need to start your SaaS project",
+    description: "Everything you need to get started with CodeLumus",
     subtitle: "Core Features",
     includes: [
-      "Essential SaaS Features",
+      "Essential Website Features",
       "User Authentication",
       "Basic Dashboard",
       "Email Integration",

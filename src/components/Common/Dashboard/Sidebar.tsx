@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Logo from "../Logo";
 
 export default function Sidebar({
 	sidebarOthersData,
@@ -16,22 +17,9 @@ export default function Sidebar({
 				ref={sidebarRef}
 				className='h-full border-r border-stroke px-6 py-10 dark:border-stroke-dark'
 			>
-				<Link href='/' className='mb-10 inline-block'>
-					<Image
-						src={"/images/logo/logo.svg"}
-						alt='logo'
-						className='block dark:hidden'
-						width={193}
-						height={34}
-					/>
-					<Image
-						src={"/images/logo/logo-light.svg"}
-						alt='logo'
-						className='hidden dark:block'
-						width={193}
-						height={34}
-					/>
-				</Link>
+				<div className="mb-10">
+					<Logo />
+				</div>
 				<div className='mb-6'>
 					<p className='mb-4 font-satoshi text-sm font-medium uppercase text-body dark:text-gray-6'>
 						Main menu

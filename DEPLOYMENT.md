@@ -46,7 +46,7 @@
    - Implemented proper dependency installation flags
 
 ## Successful Deployment
-- Preview URL: https://lumux-mleg96afd-carlos-projects-595c805f.vercel.app
+- Preview URL: https://codelumus-mleg96afd-carlos-projects-595c805f.vercel.app
 - Build completed successfully
 - All Next.js routes compiled properly
 - Development environment configured correctly
@@ -66,7 +66,7 @@ When deploying with Vercel CLI, these were the chosen options:
 1. Set up and deploy: `yes`
 2. Which scope: Selected personal scope
 3. Link to existing project: `no`
-4. Project name: `lumux`
+4. Project name: `codelumus`
 5. Directory: `./` (root directory)
 6. Modified settings: `no` (used auto-detected Next.js settings)
 

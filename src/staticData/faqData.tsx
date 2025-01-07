@@ -1,8 +1,8 @@
 export const faqData = [
   {
-    question: "What is Lumux?",
+    question: "What is CodeLumus?",
     answer:
-      "Lumux is a professional website management service that provides custom-built solutions for businesses. We handle everything from core website maintenance to advanced features like payment processing, analytics, and content management.",
+      "CodeLumus is a professional website management service that provides custom-built solutions for businesses. We handle everything from core website maintenance to advanced features like payment processing, analytics, and content management.",
   },
   {
     question: "How does the website management service work?",

@@ -12,7 +12,7 @@ const Footer = () => {
 					<div className='w-full max-w-[275px]'>
 						<Logo />
 						<p className='mt-5 text-gray-5'>
-							© Your SaaS - Demo SaaS website created using SaaSBold
+							© CodeLumus - Professional Website Management Service
 						</p>
 
 						<ul className='mt-11 flex items-center gap-2'>

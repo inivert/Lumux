@@ -2,7 +2,7 @@ import { FeatureWithImg } from "@/types/featureWithImg";
 
 const featureItemData: FeatureWithImg[] = [
 	{
-		title: "Build, Launch, Scale with SaaSBold",
+		title: "Build, Launch, Scale with CodeLumus",
 		description:
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit praesent condimentum malesuada consequat quam.",
 		checklist: [
@@ -14,7 +14,7 @@ const featureItemData: FeatureWithImg[] = [
 		id: 1,
 	},
 	{
-		title: "The Best SaaS Boilerplate Available on The Web",
+		title: "The Best Website Management Service Available",
 		description:
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit praesent condimentum malesuada consequat quam.",
 		checklist: [

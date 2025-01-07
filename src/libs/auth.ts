@@ -166,6 +166,42 @@ export const authOptions: NextAuthOptions = {
 
 	callbacks: {
 		async signIn({ user, account, profile, email, credentials }) {
+			// Skip invitation check for impersonation and fetchSession
+			if (credentials && (credentials.adminEmail || credentials.email)) {
+				return true;
+			}
+
+			// For all other sign in methods (Google, GitHub, Email, Credentials)
+			const userEmail = user.email?.toLowerCase();
+			if (!userEmail) return false;
+
+			// Check if user exists
+			const existingUser = await prisma.user.findUnique({
+				where: { email: userEmail },
+				include: { invitation: true }
+			});
+
+			if (existingUser) return true; // Allow existing users to sign in
+
+			// Check for valid invitation
+			const invitation = await prisma.invitation.findFirst({
+				where: {
+					email: userEmail,
+					accepted: false,
+					expiresAt: { gt: new Date() }
+				}
+			});
+
+			if (!invitation) {
+				throw new Error("You need an invitation to sign up. Please contact an administrator.");
+			}
+
+			// If we have a valid invitation, allow sign in and update the invitation
+			await prisma.invitation.update({
+				where: { id: invitation.id },
+				data: { accepted: true }
+			});
+
 			return true;
 		},
 		async redirect({ url, baseUrl }) {
