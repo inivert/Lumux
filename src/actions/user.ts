@@ -1,5 +1,5 @@
 "use server";
-import { prisma } from "@/libs/prismaDb";
+import { prisma } from "@/libs/prisma";
 import { isAuthorized } from "@/libs/isAuthorized";
 
 export async function getUsers(filter: any) {

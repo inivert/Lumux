@@ -4,7 +4,7 @@ const integrations = {
 	isAlgoliaEnabled: false,
 	isMailchimpEnabled: false,
 	isAuthEnabled: true,
-	isPaymentsEnabled: false,
+	isPaymentsEnabled: true,
 };
 
 const messages = {

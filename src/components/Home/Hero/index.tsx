@@ -1,6 +1,5 @@
 import Image from "next/image";
 import React from "react";
-import brandData from "./brandData";
 import Link from "next/link";
 
 const Hero = () => {
@@ -62,28 +61,6 @@ const Hero = () => {
 				</Link>
 			</div>
 
-			{/* <!-- Hero brands --> */}
-			<div className='mx-auto mt-20 w-full max-w-[1170px] px-4 sm:px-8 lg:mt-25 xl:mt-32.5 xl:px-0'>
-				<h2 className='text-center font-satoshi text-lg font-medium text-black dark:text-white'>
-					Built by the same team behind numerous successful SaaS and digital
-					products
-				</h2>
-
-				<div className='mt-9 flex flex-wrap items-center justify-center gap-7.5 xl:gap-16'>
-					{/* <!-- brand item --> */}
-					{brandData?.map((brand, key) => (
-						<Link
-							key={key}
-							href={brand.link}
-							aria-label={brand.name}
-							className='text-dark-4 duration-300 ease-in-out hover:text-dark-3 dark:hover:text-white'
-						>
-							{brand.image}
-						</Link>
-					))}
-				</div>
-			</div>
-
 			{/* <!-- Hero Bg Shapes --> */}
 			<div className='hidden sm:block'>
 				<div className='absolute left-0 top-0 -z-1'>
@@ -98,8 +75,8 @@ const Hero = () => {
 					<Image
 						src='/images/hero/hero-shape-02.svg'
 						alt='shape'
-						width={425}
-						height={682}
+						width={340}
+						height={480}
 					/>
 				</div>
 			</div>

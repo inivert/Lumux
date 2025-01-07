@@ -1,5 +1,5 @@
 "use server";
-import { prisma } from "@/libs/prismaDb";
+import { prisma } from "@/libs/prisma";
 import bcrypt from "bcrypt";
 import { revalidatePath } from "next/cache";
 import { isAuthorized } from "@/libs/isAuthorized";
