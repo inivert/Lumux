@@ -30,12 +30,11 @@ export async function POST(req: Request) {
     try {
       existingUser = await prisma.user.findUnique({
         where: { id: userId },
-        include: { subscription: true },
       });
 
       console.log("[Payment Route] User found:", {
         email: existingUser?.email,
-        hasSubscription: !!existingUser?.subscription,
+        hasSubscription: !!existingUser?.subscriptionId,
       });
     } catch (error) {
       console.error("[Payment Route] Database error:", error);
@@ -61,11 +60,17 @@ export async function POST(req: Request) {
 
     try {
       // If user doesn't have a Stripe customer ID, create one
-      if (!existingUser.subscription?.stripeCustomerId) {
+      if (!existingUser.customerId) {
         console.log("[Payment Route] Creating new Stripe customer");
         const customer = await stripe.customers.create({
           email: existingUser.email,
           metadata: { userId },
+        });
+
+        // Update user with customer ID
+        await prisma.user.update({
+          where: { id: userId },
+          data: { customerId: customer.id },
         });
 
         // Create checkout session
@@ -95,7 +100,7 @@ export async function POST(req: Request) {
       // If user has a Stripe customer ID, create a billing portal session
       console.log("[Payment Route] Creating billing portal session");
       const session = await stripe.billingPortal.sessions.create({
-        customer: existingUser.subscription.stripeCustomerId,
+        customer: existingUser.customerId,
         return_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing`,
       });
 
