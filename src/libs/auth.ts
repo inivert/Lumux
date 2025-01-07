@@ -19,6 +19,7 @@ export const authOptions: NextAuthOptions = {
 	pages: {
 		signIn: "/auth/signin",
 		error: "/auth/error",
+		verifyRequest: "/auth/verify-request",
 	},
 	adapter: PrismaAdapter(prisma),
 	secret: process.env.SECRET,
@@ -151,6 +152,7 @@ export const authOptions: NextAuthOptions = {
 				},
 			},
 			from: process.env.EMAIL_FROM,
+			maxAge: 24 * 60 * 60, // 24 hours
 		}),
 
 		GitHubProvider({
@@ -171,7 +173,6 @@ export const authOptions: NextAuthOptions = {
 				return true;
 			}
 
-			// For all other sign in methods (Google, GitHub, Email, Credentials)
 			const userEmail = user.email?.toLowerCase();
 			if (!userEmail) return false;
 
@@ -183,33 +184,47 @@ export const authOptions: NextAuthOptions = {
 
 			if (existingUser) return true; // Allow existing users to sign in
 
-			// Check for valid invitation
-			const invitation = await prisma.invitation.findFirst({
-				where: {
-					email: userEmail,
-					accepted: false,
-					expiresAt: { gt: new Date() }
+			// Only check for invitation if using email provider
+			if (account?.provider === 'email') {
+				// Check for valid invitation
+				const invitation = await prisma.invitation.findFirst({
+					where: {
+						email: userEmail,
+						accepted: false,
+						expiresAt: { gt: new Date() }
+					}
+				});
+
+				if (!invitation) {
+					throw new Error("You need an invitation to sign up. Please check your email invitation.");
 				}
-			});
 
-			if (!invitation) {
-				throw new Error("You need an invitation to sign up. Please contact an administrator.");
+				// If we have a valid invitation, allow sign in and update the invitation
+				await prisma.invitation.update({
+					where: { id: invitation.id },
+					data: { accepted: true }
+				});
+
+				return true;
+			} else {
+				// Block other providers if user doesn't exist
+				throw new Error("This is a private application. Please use your invitation email to sign in.");
 			}
-
-			// If we have a valid invitation, allow sign in and update the invitation
-			await prisma.invitation.update({
-				where: { id: invitation.id },
-				data: { accepted: true }
-			});
-
-			return true;
 		},
+
 		async redirect({ url, baseUrl }) {
+			// After successful email verification, redirect to dashboard
+			if (url.includes('/api/auth/callback/email')) {
+				return `${baseUrl}/dashboard`;
+			}
+			
+			// Default redirect rules
 			if (url.startsWith("/")) return `${baseUrl}${url}`;
 			if (new URL(url).origin === baseUrl) return url;
 			if (url.startsWith("http://localhost:3000")) return url;
 			return baseUrl;
 		},
+
 		async jwt({ token, user, account, profile, trigger, session }) {
 			if (trigger === "update" && session?.user) {
 				return {

@@ -6,6 +6,7 @@ import GithubSigninButton from "../GithubSigninButton";
 import SigninWithMagicLink from "../SigninWithMagicLink";
 import SigninWithPassword from "../SigninWithPassword";
 import DemoSignin from "./DemoSignin";
+import InvitedUserSignIn from "../InvitedUserSignIn";
 
 export default function Signin() {
 	const [signinOption, setSigninOption] = useState("magic-link");
@@ -13,11 +14,23 @@ export default function Signin() {
 	return (
 		<>
 			<div className='mx-auto w-full max-w-[400px] px-4 py-10'>
+				<div className="mb-7.5">
+					<InvitedUserSignIn />
+				</div>
+
+				<div className='mb-7.5 flex items-center justify-center'>
+					<span className='block h-px w-full bg-stroke dark:bg-stroke-dark'></span>
+					<div className='inline-block bg-white px-3 text-base text-body dark:bg-[#151F34] dark:text-gray-5'>
+						OR
+					</div>
+					<span className='block h-px w-full bg-stroke dark:bg-stroke-dark'></span>
+				</div>
+
 				<div className='space-y-3 pb-7.5'>
 					<GoogleSigninButton text='Sign in' />
-
 					<GithubSigninButton text='Sign in' />
 				</div>
+
 				<div className='mb-7.5 flex items-center justify-center'>
 					<span className='block h-px w-full bg-stroke dark:bg-stroke-dark'></span>
 					<div className='inline-block bg-white px-3 text-base text-body dark:bg-[#151F34] dark:text-gray-5'>
