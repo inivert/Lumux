@@ -32,7 +32,7 @@ export const InvitationEmail = ({ email, role }: InvitationEmailProps) => {
           </Text>
 
           <Text style={text}>
-            You can sign in right away using this email address: <strong>{email}</strong>
+            You can sign in right away using with magic link from this email address: <strong>{email}</strong>
           </Text>
 
           <Text style={text}>

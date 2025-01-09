@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { userMenuData, adminMenuData } from "@/staticData/sidebarData";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const AccountMenu = ({ user }: any) => {
 	const pathname = usePathname();
@@ -16,59 +17,97 @@ const AccountMenu = ({ user }: any) => {
 
 	return (
 		<>
-			<div className='mb-2 flex items-center border-b border-stroke px-6 pb-3.5 dark:border-stroke-dark'>
-				<div className='mr-3'>
-					<img
+			<div className='mb-2 flex items-center border-b border-stroke px-3 py-3 dark:border-stroke-dark'>
+				<div className='relative mr-2.5 h-8 w-8 overflow-hidden rounded-full'>
+					<Image
 						src={profilePic}
 						alt={user?.name || "profile"}
-						className='h-[48px] w-[48px] overflow-hidden rounded-full'
+						fill
+						className='object-cover'
+						sizes="32px"
 					/>
 				</div>
-				<div>
-					<p className='font-satoshi text-base font-medium text-dark dark:text-white'>
+				<div className="min-w-0">
+					<p className='font-satoshi text-sm font-medium text-dark dark:text-white truncate'>
 						{user?.name}
 					</p>
-					<p className='text-sm text-body dark:text-gray-5'>{user?.email}</p>
+					<p className='text-xs text-body dark:text-gray-5 truncate'>
+						{user?.email}
+					</p>
 				</div>
 			</div>
-			<div>
+
+			<div className="max-h-[calc(100vh-200px)] overflow-y-auto">
 				<ul className=''>
 					{sidebarData?.map((item: any) => (
-						<li key={item?.id} className='mx-2.5 mb-1'>
+						<li key={item?.id} className='mx-2 mb-1'>
 							<Link
-								href={`${user?.role?.toLowerCase()}${item?.path}`}
-								className={`flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 font-satoshi font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white ${
+								href={`${item?.path}`}
+								className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 font-satoshi text-sm font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white ${
 									pathname === item?.path
 										? "bg-gray-2 text-dark dark:bg-primary dark:text-white"
 										: ""
 								}`}
 							>
-								<span>{item?.icon}</span>
-								{item?.title}
+								<span className="w-4">{item?.icon}</span>
+								<span className="truncate">{item?.title}</span>
 							</Link>
 						</li>
 					))}
-					<li className='mx-2.5 mb-1'>
+
+					<li className='mx-2'>
 						<button
-							onClick={() => signOut({ callbackUrl: "/" })}
-							className='flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 font-satoshi font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'
+							onClick={() => signOut()}
+							className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 font-satoshi text-sm font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'
 						>
-							<span>
+							<span className='w-4'>
 								<svg
-									className='fill-current'
-									width='18'
-									height='18'
+									width='16'
+									height='16'
 									viewBox='0 0 18 18'
 									fill='none'
 									xmlns='http://www.w3.org/2000/svg'
 								>
-									<path
-										d='M15.7499 2.9812H14.2874V2.36245C14.2874 2.02495 14.0062 1.71558 13.6405 1.71558C13.2749 1.71558 12.9937 1.99683 12.9937 2.36245V2.9812H4.97803V2.36245C4.97803 2.02495 4.69678 1.71558 4.33115 1.71558C3.96553 1.71558 3.68428 1.99683 3.68428 2.36245V2.9812H2.24991C1.29991 2.9812 0.478027 3.77495 0.478027 4.75308V14.5406C0.478027 15.4906 1.27178 16.3125 2.24991 16.3125H15.7499C16.6999 16.3125 17.5218 15.5187 17.5218 14.5406V4.72495C17.5218 3.77495 16.7281 2.9812 15.7499 2.9812ZM1.77178 8.21245H4.1624V10.9968H1.77178V8.21245ZM5.42803 8.21245H8.38115V10.9968H5.42803V8.21245ZM8.38115 12.2625V15.0187H5.42803V12.2625H8.38115ZM9.64678 12.2625H12.5999V15.0187H9.64678V12.2625ZM9.64678 8.21245H12.5999V10.9968H9.64678V8.21245ZM13.8374 8.21245H16.228V10.9968H13.8374V8.21245ZM2.24991 4.24683H3.71241V4.83745C3.71241 5.17495 3.99366 5.48433 4.35928 5.48433C4.72491 5.48433 5.00616 5.20308 5.00616 4.83745V4.24683H13.0499V4.83745C13.0499 5.17495 13.3312 5.48433 13.6968 5.48433C14.0624 5.48433 14.3437 5.20308 14.3437 4.83745V4.24683H15.7499C16.0312 4.24683 16.2562 4.47183 16.2562 4.75308V6.94683H1.77178V4.75308C1.77178 4.47183 1.96866 4.24683 2.24991 4.24683ZM1.77178 14.5125V12.2343H4.1624V14.9906H2.24991C1.96866 15.0187 1.77178 14.7937 1.77178 14.5125ZM15.7499 15.0187H13.8374V12.2625H16.228V14.5406C16.2562 14.7937 16.0312 15.0187 15.7499 15.0187Z'
-										fill=''
-									/>
+									<g clipPath='url(#clip0_2251_109)'>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M3.75 2.25C3.75 1.83579 4.08579 1.5 4.5 1.5H9C9.41421 1.5 9.75 1.83579 9.75 2.25C9.75 2.66421 9.41421 3 9 3H4.5C4.08579 3 3.75 2.66421 3.75 2.25Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M3.75 15.75C3.75 15.3358 4.08579 15 4.5 15H9C9.41421 15 9.75 15.3358 9.75 15.75C9.75 16.1642 9.41421 16.5 9 16.5H4.5C4.08579 16.5 3.75 16.1642 3.75 15.75Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M2.25 3.75C2.66421 3.75 3 4.08579 3 4.5V13.5C3 13.9142 2.66421 14.25 2.25 14.25C1.83579 14.25 1.5 13.9142 1.5 13.5V4.5C1.5 4.08579 1.83579 3.75 2.25 3.75Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M6.75 9C6.75 8.58579 7.08579 8.25 7.5 8.25H15.75C16.1642 8.25 16.5 8.58579 16.5 9C16.5 9.41421 16.1642 9.75 15.75 9.75H7.5C7.08579 9.75 6.75 9.41421 6.75 9Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M11.4697 4.71967C11.7626 4.42678 12.2374 4.42678 12.5303 4.71967L16.2803 8.46967C16.5732 8.76256 16.5732 9.23744 16.2803 9.53033L12.5303 13.2803C12.2374 13.5732 11.7626 13.5732 11.4697 13.2803C11.1768 12.9874 11.1768 12.5126 11.4697 12.2197L14.6893 9L11.4697 5.78033C11.1768 5.48744 11.1768 5.01256 11.4697 4.71967Z'
+											fill='currentColor'
+										/>
+									</g>
+									<defs>
+										<clipPath id='clip0_2251_109'>
+											<rect width='18' height='18' rx='5' fill='white' />
+										</clipPath>
+									</defs>
 								</svg>
 							</span>
-							Sign Out
+							<span className="truncate">Logout</span>
 						</button>
 					</li>
 				</ul>

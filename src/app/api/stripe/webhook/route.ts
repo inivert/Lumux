@@ -17,7 +17,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const signature = headers().get("Stripe-Signature");
+  const headersList = await headers();
+  const signature = headersList.get("Stripe-Signature");
 
   if (!signature) {
     return new NextResponse("No signature found", { status: 400 });
@@ -26,6 +27,10 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      return new NextResponse("Webhook secret is not set", { status: 500 });
+    }
+    
     event = stripe.webhooks.constructEvent(
       body,
       signature,

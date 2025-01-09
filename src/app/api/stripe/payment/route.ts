@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/libs/prisma";
 
+// Add more detailed logging for debugging
+console.log("[Payment Route] Environment check:", {
+  hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+  keyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7),
+});
+
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error("Missing STRIPE_SECRET_KEY");
-  throw new Error("Stripe secret key is required");
+  throw new Error('Missing STRIPE_SECRET_KEY');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY.trim(), {
   apiVersion: "2023-10-16",
 });
 
@@ -59,52 +64,46 @@ export async function POST(req: Request) {
     }
 
     try {
+      let customerId = existingUser.customerId;
+      
       // If user doesn't have a Stripe customer ID, create one
-      if (!existingUser.customerId) {
+      if (!customerId) {
         console.log("[Payment Route] Creating new Stripe customer");
         const customer = await stripe.customers.create({
           email: existingUser.email,
           metadata: { userId },
         });
 
+        customerId = customer.id;
+
         // Update user with customer ID
         await prisma.user.update({
           where: { id: userId },
           data: { customerId: customer.id },
         });
-
-        // Create checkout session
-        const session = await stripe.checkout.sessions.create({
-          customer: customer.id,
-          mode: 'subscription',
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price: priceId,
-              quantity: 1,
-            },
-          ],
-          success_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing?success=true`,
-          cancel_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing?success=false`,
-          subscription_data: {
-            metadata: {
-              userId,
-            },
-          },
-        });
-
-        console.log("[Payment Route] Checkout session created:", session.id);
-        return NextResponse.json({ url: session.url });
       }
 
-      // If user has a Stripe customer ID, create a billing portal session
-      console.log("[Payment Route] Creating billing portal session");
-      const session = await stripe.billingPortal.sessions.create({
-        customer: existingUser.customerId,
-        return_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing`,
+      // Create checkout session for new subscription
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing?success=true`,
+        cancel_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing?success=false`,
+        subscription_data: {
+          metadata: {
+            userId,
+          },
+        },
       });
 
-      console.log("[Payment Route] Portal session created");
+      console.log("[Payment Route] Checkout session created:", session.id);
       return NextResponse.json({ url: session.url });
     } catch (error: any) {
       console.error("[Payment Route] Stripe error:", {

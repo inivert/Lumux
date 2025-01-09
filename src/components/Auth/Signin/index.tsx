@@ -1,7 +1,8 @@
 "use client";
-import Link from "next/link";
+import { useState } from "react";
 import GoogleSigninButton from "../GoogleSigninButton";
-import SigninWithPassword from "../SigninWithPassword";
+import SigninWithMagicLink from "../SigninWithMagicLink";
+import DemoSignin from "./DemoSignin";
 
 export default function Signin() {
 	return (
@@ -28,19 +29,13 @@ export default function Signin() {
 					<span className='block h-px w-full bg-stroke dark:bg-stroke-dark'></span>
 				</div>
 
-				<SigninWithPassword />
-
-				<div className='mt-7.5 text-center'>
-					<p className='mb-3 text-base text-gray-500 dark:text-gray-400'>
-						First time logging in?
-					</p>
-					<Link
-						href='/auth/invite'
-						className='inline-flex h-12 min-w-[200px] items-center justify-center rounded-lg bg-primary/10 px-6 font-satoshi text-base font-medium text-primary transition-colors hover:bg-primary/20'
-					>
-						Set Up Your Account
-					</Link>
+				<div className='mb-5'>
+					<SigninWithMagicLink />
 				</div>
+
+				<span className='my-10 block h-px w-full bg-stroke dark:bg-stroke-dark '></span>
+
+				<DemoSignin />
 			</div>
 		</>
 	);

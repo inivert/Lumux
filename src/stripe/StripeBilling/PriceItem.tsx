@@ -1,13 +1,13 @@
-'use client';
-import axios from 'axios';
-import { Price } from '../../types/priceItem';
-import Image from 'next/image';
-import { useSession } from 'next-auth/react';
-import { integrations, messages } from '../../../integrations.config';
-import toast from 'react-hot-toast';
-import { useEffect } from 'react';
-import getUpdatedData from '../../libs/getUpdatedData';
-import AnimatedPrice from './AnimatedPrice';
+"use client";
+import axios from "axios";
+import { Price } from "../../types/priceItem";
+import Image from "next/image";
+import { useSession } from "next-auth/react";
+import { integrations, messages } from "../../../integrations.config";
+import toast from "react-hot-toast";
+import { useEffect, useRef } from "react";
+import getUpdatedData from "../../libs/getUpdatedData";
+import AnimatedPrice from "./AnimatedPrice";
 
 type Props = {
   plan: Price;
@@ -17,33 +17,47 @@ type Props = {
 };
 
 const PriceItem = ({ plan, isBilling, showYearly }: Props) => {
-  const { data: session, update, status } = useSession();
-  const user = session?.user;
+	const { data: session, update, status } = useSession();
+	const user = session?.user;
+	const lastUpdate = useRef<number>(0);
 
-  useEffect(() => {
-    const fetchAndUpdateSession = async () => {
-      if (status === 'loading') return;
-      if (!user?.email) return;
-      try {
-        const data = await getUpdatedData(user.email);
-        if (!data) return;
+	useEffect(() => {
+		const fetchAndUpdateSession = async () => {
+			if (status === "loading") return;
+			if (!user?.email) return;
 
-        await update({
-          ...session,
-          user: {
-            ...session?.user,
-            priceId: data.priceId,
-            currentPeriodEnd: data.currentPeriodEnd,
-            subscriptionId: data.subscriptionId,
-          },
-        });
-      } catch (error) {
-        console.error("Couldn't update session:", error);
-      }
-    };
+			// Prevent updates more frequent than every 5 seconds
+			const now = Date.now();
+			if (now - lastUpdate.current < 5000) return;
 
-    fetchAndUpdateSession();
-  }, [session, status, update, user?.email]);
+			try {
+				const data = await getUpdatedData(user.email);
+				if (!data) return;
+
+				// Only update if data has changed
+				if (
+					data.priceId !== user.priceId ||
+					data.currentPeriodEnd !== user.currentPeriodEnd ||
+					data.subscriptionId !== user.subscriptionId
+				) {
+					lastUpdate.current = now;
+					await update({
+						...session,
+						user: {
+							...session?.user,
+							priceId: data.priceId,
+							currentPeriodEnd: data.currentPeriodEnd,
+							subscriptionId: data.subscriptionId,
+						},
+					});
+				}
+			} catch (error) {
+				console.error("Couldn't update session:", error);
+			}
+		};
+
+		fetchAndUpdateSession();
+	}, [status, user?.email, update]); // Removed session from dependencies
 
   const handleSubscription = async () => {
     if (!session || !session.user?.id) {

@@ -19,14 +19,24 @@ export default async function DashboardLayout({
 	const menuData = session.user.role === "admin" ? adminMenuData : userMenuData;
 
 	return (
-		<div className='flex h-screen overflow-hidden'>
-			<Sidebar menuData={menuData} />
-			<div className='relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden'>
-				<Header />
-				<main className='mx-auto w-full max-w-screen-2xl p-4 md:p-6 2xl:p-10'>
-					{children}
-				</main>
-			</div>
-		</div>
+		<>
+			<Loader />
+			<>
+				<ToastContext />
+				<Providers>
+					<NextTopLoader
+						color='#635BFF'
+						crawlSpeed={300}
+						showSpinner={false}
+						shadow='none'
+					/>
+					<HeaderWrapper />
+					<div className="pt-16 sm:pt-16 md:pt-16 lg:pt-16 xl:pt-16">
+						{children}
+					</div>
+					<FooterWrapper />
+				</Providers>
+			</>
+		</>
 	);
 }

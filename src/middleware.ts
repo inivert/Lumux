@@ -2,32 +2,62 @@ import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 export default withAuth(
-	function middleware(req) {
+	async function middleware(req) {
 		const token = req.nextauth.token;
-		const isAdminPath = req.nextUrl.pathname.startsWith("/admin");
-		const isDashboardPath = req.nextUrl.pathname.startsWith("/dashboard");
+		const { pathname, search } = req.nextUrl;
+		const isAuthPage = pathname.startsWith("/auth");
+		const isSignInPage = pathname === "/auth/signin";
+		const isCallbackPage = pathname.startsWith("/api/auth/callback");
+		const isVerifyRequestPage = pathname === "/auth/verify-request";
 
-		if (!token) {
+		// Allow access to auth-related pages without redirection
+		if (isCallbackPage || isVerifyRequestPage) {
+			return NextResponse.next();
+		}
+
+		// If user is not logged in and trying to access protected routes
+		if (!token && !isAuthPage) {
 			return NextResponse.redirect(new URL("/auth/signin", req.url));
 		}
 
-		if (isAdminPath && token.role !== "admin") {
-			return NextResponse.redirect(new URL("/dashboard", req.url));
-		}
+		// If user is logged in and trying to access auth pages
+		if (token && isAuthPage) {
+			// Don't redirect if it's a sign-in page with a callback URL
+			if (isSignInPage && search.includes("callbackUrl")) {
+				return NextResponse.next();
+			}
 
-		if (isDashboardPath && token.role === "admin") {
-			return NextResponse.redirect(new URL("/admin", req.url));
+			if (token.role === "ADMIN") {
+				return NextResponse.redirect(new URL("/admin", req.url));
+			}
+			return NextResponse.redirect(new URL("/user", req.url));
 		}
 
 		return NextResponse.next();
 	},
 	{
 		callbacks: {
-			authorized: ({ token }) => !!token,
+			authorized: ({ token, req }) => {
+				// Allow access to auth-related pages without authorization
+				if (
+					req.nextUrl.pathname.startsWith("/auth") ||
+					req.nextUrl.pathname.startsWith("/api/auth/callback")
+				) {
+					return true;
+				}
+				return !!token;
+			},
 		},
 	}
 );
 
 export const config = {
-	matcher: ["/admin/:path*", "/dashboard/:path*"],
+	matcher: [
+		"/admin/:path*",
+		"/user/:path*",
+		"/auth/:path*",
+		"/api/user/:path*",
+		"/api/admin/:path*",
+		"/api/auth/callback/:path*",
+	],
 };
