@@ -189,31 +189,8 @@ export const authOptions: NextAuthOptions = {
 				where: { email: userEmail }
 			});
 
-			if (existingUser) {
-				return true;
-			}
-
-			// If user doesn't exist, create them
-			try {
-				// Create the user
-				const newUser = await prisma.user.create({
-					data: {
-						email: userEmail,
-						name: user.name || userEmail.split('@')[0],
-						image: user.image,
-						role: "USER", // Default to USER role
-					}
-				});
-
-				// Update the user object with the new data
-				user.role = newUser.role;
-				user.id = newUser.id;
-
-				return true;
-			} catch (error) {
-				console.error("Error during user creation:", error);
-				return false;
-			}
+			// Only allow sign in if user exists
+			return !!existingUser;
 		},
 
 		async jwt({ token, user, account, profile, trigger, session }) {

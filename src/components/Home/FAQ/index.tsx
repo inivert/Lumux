@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import faqData from "./faqData";
+import { faqData } from "@/staticData/faqData";
 import FaqItem from "./FaqItem";
 import SectionHeader from "@/components/Common/SectionHeader";
 
