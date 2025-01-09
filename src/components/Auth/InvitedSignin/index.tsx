@@ -2,16 +2,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import InputGroup from "@/components/Common/Dashboard/InputGroup";
+import FormButton from "@/components/Common/Dashboard/FormButton";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -74,29 +66,20 @@ export default function InvitedSignin() {
 	}
 
 	return (
-		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-				<FormField
-					control={form.control}
-					name='email'
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Email</FormLabel>
-							<FormControl>
-								<Input
-									placeholder='Enter your email'
-									{...field}
-									disabled={isLoading}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-				<Button type='submit' className='w-full' disabled={isLoading}>
-					{isLoading ? "Verifying..." : "Continue"}
-				</Button>
-			</form>
-		</Form>
+		<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+			<InputGroup
+				label="Email"
+				type="email"
+				placeholder="Enter your email"
+				name="email"
+				value={form.watch('email')}
+				handleChange={(e: React.ChangeEvent<HTMLInputElement>) => form.setValue('email', e.target.value)}
+				error={form.formState.errors.email?.message}
+				disabled={isLoading}
+			/>
+			<FormButton disabled={isLoading}>
+				{isLoading ? "Verifying..." : "Continue"}
+			</FormButton>
+		</form>
 	);
 }

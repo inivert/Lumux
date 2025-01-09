@@ -1,30 +1,48 @@
 #!/bin/bash
 
-# Create production environment file
-cat << EOF > .env.docker
-# Database
+# Generate random password
+POSTGRES_PASSWORD=$(openssl rand -base64 12)
+
+# Database configuration
 POSTGRES_USER=user
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
-POSTGRES_DB=lumux
-DATABASE_URL=postgresql://user:\${POSTGRES_PASSWORD}@db:5432/lumux?schema=public
+POSTGRES_DB=codelumus
+DATABASE_URL=postgresql://user:\${POSTGRES_PASSWORD}@db:5432/codelumus?schema=public
 
-# Node
-NODE_ENV=production
-PORT=3000
-
-# Next Auth
-# Generate a new secret: openssl rand -base64 32
+# Generate a random secret for NextAuth
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
+
+# Create .env file
+cat > .env << EOL
+# Database
+DATABASE_URL=${DATABASE_URL}
+POSTGRES_USER=${POSTGRES_USER}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+POSTGRES_DB=${POSTGRES_DB}
+
+# NextAuth
 NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
 
-# Copy your existing secrets here
-# STRIPE_SECRET_KEY=
-# STRIPE_WEBHOOK_SECRET=
-# STRIPE_PRICE_ID=
-EOF
+# OAuth
+GITHUB_ID=
+GITHUB_SECRET=
 
-# Set proper permissions
-chmod 600 .env.docker
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
-echo "Environment file created at .env.docker"
-echo "Please review and fill in any missing values before running docker-compose" 
+# Stripe
+STRIPE_API_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+
+# Email
+RESEND_API_KEY=
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+EOL
+
+# Copy .env to .env.local
+cp .env .env.local
+
+echo "Environment files created successfully!" 

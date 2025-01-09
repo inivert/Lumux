@@ -16,8 +16,8 @@ const FAQ = () => {
 			{/* <!-- section title --> */}
 
 			<SectionHeader
-				title={"Frequently Ask Questionss"}
-				description='Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent condimentum dictum euismod malesuada lacus, non consequat quam.'
+				title={"Frequently Asked Questions"}
+				description='Learn more about the website management service and how it can help grow your business.'
 			/>
 
 			<div className='mx-auto w-full max-w-[662px] px-4 sm:px-8 xl:px-0'>

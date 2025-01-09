@@ -111,13 +111,13 @@ const Support = () => {
 							</div>
 						</div>
 
-						<div>
-							<h2 className='mb-5 max-w-[357px] font-satoshi text-custom-3xl font-bold -tracking-[1.3px] text-white'>
-								Need any help? Just open a support ticket
-							</h2>
-							<p className='max-w-[270px] text-gray-5'>
-								Our support team will get back to as soon as they can.
-							</p>
+						<div className='flex flex-col gap-4'>
+							<div className='text-center'>
+								<h2 className='mb-2 text-2xl font-bold text-black dark:text-white'>Get Support</h2>
+								<p className='text-gray-500 dark:text-gray-400'>
+									Your message will be responded to as soon as possible.
+								</p>
+							</div>
 						</div>
 					</div>
 				</div>

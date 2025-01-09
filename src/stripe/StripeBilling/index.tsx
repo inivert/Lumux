@@ -22,7 +22,7 @@ const StripeBilling = ({ isBilling }: StripeBillingProps) => {
 				<>
 					<SectionHeader
 						title={"Simple Pricing with Powerful Add-ons"}
-						description='Choose our core plan and enhance it with the add-ons that suit your needs.'
+						description='Choose a core plan and enhance it with add-ons that suit your needs.'
 					/>
 					<div className="flex items-center justify-center mb-8">
 						<div className="relative flex items-center p-1 bg-gray-100 rounded-full">

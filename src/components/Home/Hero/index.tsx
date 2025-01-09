@@ -15,8 +15,8 @@ const Hero = () => {
 
 					<p className='mx-auto mb-4 max-w-[600px] text-sm text-gray-700 dark:text-gray-300 sm:text-base'>
 						A complete website management service with all essential features,
-						integrations, and tools you need to maintain and grow your website.
-						Let us handle the technical details while you focus on your business.
+						integrations, and tools to maintain and grow your website.
+						Focus on your business while your website is expertly managed.
 					</p>
 
 					<div className="flex justify-center mb-6">

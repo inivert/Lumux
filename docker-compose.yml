@@ -2,64 +2,53 @@ version: '3.8'
 
 services:
   app:
+    container_name: app
     build:
       context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
+      target: development
+    volumes:
+      - .:/usr/src/app
+    command: npm run dev
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/codelumus?schema=public
+      - NODE_ENV=development
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=secret
+      - GITHUB_ID=
+      - GITHUB_SECRET=
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - STRIPE_API_KEY=
+      - STRIPE_WEBHOOK_SECRET=
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+      - RESEND_API_KEY=
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
     ports:
-      - "3000:3000"
+      - 3000:3000
+    networks:
+      - app-network
     depends_on:
       - db
-    environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/lumux?schema=public
-      - NODE_ENV=production
-    volumes:
-      - app_data:/app/data
-    networks:
-      - app_network
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {if (r.statusCode !== 200) process.exit(1)})"]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-      start_period: 5s
 
   db:
-    image: postgres:16-alpine
-    restart: unless-stopped
+    container_name: db
+    image: postgres:15
+    restart: always
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=lumux
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - POSTGRES_DB=codelumus
+    ports:
+      - 5432:5432
     networks:
-      - app_network
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
+      - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d lumux"]
+      test: ["CMD-SHELL", "pg_isready -U user -d codelumus"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
-    ports:
-      - "5432:5432"
-
-volumes:
-  postgres_data:
-    driver: local
-  app_data:
-    driver: local
 
 networks:
-  app_network:
+  app-network:
     driver: bridge 
