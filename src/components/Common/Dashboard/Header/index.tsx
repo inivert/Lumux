@@ -1,5 +1,4 @@
 import AccountButton from "./AccountButton";
-import Notifications from "./NotificationMenu/Notifications";
 import ThemeToggler from "./ThemeToggler";
 import { useSession } from "next-auth/react";
 
@@ -23,7 +22,6 @@ export default function Header({ openSidebar, setOpenSidebar }: any) {
 
 			<div className='flex w-full items-center justify-end gap-4'>
 				<ThemeToggler />
-				<Notifications role={session?.user?.role as string} />
 				<AccountButton user={session?.user} />
 			</div>
 		</div>

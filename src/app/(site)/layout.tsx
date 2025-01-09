@@ -26,7 +26,9 @@ export default function RootLayout({
 						shadow='none'
 					/>
 					<HeaderWrapper />
-					{children}
+					<div className="pt-16 sm:pt-16 md:pt-16 lg:pt-16 xl:pt-16">
+						{children}
+					</div>
 					<FooterWrapper />
 				</Providers>
 			</>

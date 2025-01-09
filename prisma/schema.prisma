@@ -1,11 +1,15 @@
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // Only needed when using a cloud provider that doesn't support the creation of new databases, like Heroku. Learn more: https://pris.ly/d/migrate-shadow
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 model Account {
@@ -45,13 +49,13 @@ model ApiKey {
 }
 
 model Invitation {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  role      String?  @default("USER")
-  token     String   @unique
-  createdAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  email     String    @unique
+  role      UserRole  @default(USER)
+  token     String    @unique
+  createdAt DateTime  @default(now())
   expiresAt DateTime
-  accepted  Boolean  @default(false)
+  accepted  Boolean   @default(false)
   userId    String?
   user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -60,27 +64,26 @@ model User {
   id                    String       @id @default(cuid())
   name                  String?
   email                 String?      @unique
-  emailVerified         DateTime?
+  emailVerified        DateTime?
   image                 String?
-  password              String?
-  hasPassword           Boolean      @default(false)
-  passwordResetToken    String?      @unique
+  password             String?      @db.Text
+  hasPassword          Boolean      @default(false)
+  passwordResetToken   String?      @unique
   passwordResetTokenExp DateTime?
-  role                  String?      @default("USER")
-  customerId            String?      @unique @map(name: "customer_id")
-  subscriptionId        String?      @unique @map(name: "subscription_id")
-  priceId               String?      @map(name: "price_id")
-  currentPeriodEnd      DateTime?    @map(name: "current_period_end")
-  createdAt             DateTime     @default(now())
-  accounts              Account[]
-  sessions              Session[]
-  apiKeys               ApiKey[]
-  invitation            Invitation[]
-  subscription          Subscription?
+  role                 UserRole     @default(USER)
+  customerId           String?      @unique @map(name: "customer_id")
+  subscriptionId       String?      @unique @map(name: "subscription_id")
+  priceId              String?      @map(name: "price_id")
+  currentPeriodEnd     DateTime?    @map(name: "current_period_end")
+  createdAt            DateTime     @default(now())
+  accounts             Account[]
+  sessions             Session[]
+  apiKeys              ApiKey[]
+  invitation           Invitation[]
+  subscription         Subscription?
 }
 
 model VerificationToken {
-  id         String   @id @default(cuid())
   identifier String
   token      String   @unique
   expires    DateTime
@@ -89,11 +92,11 @@ model VerificationToken {
 }
 
 model Subscription {
-  id                     String    @id @default(cuid())
-  userId                 String    @unique
-  stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
-  stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
-  stripePriceId          String?   @map(name: "stripe_price_id")
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  stripeSubscriptionId  String?   @unique @map(name: "stripe_subscription_id")
+  stripeCustomerId      String?   @unique @map(name: "stripe_customer_id")
+  stripePriceId         String?   @map(name: "stripe_price_id")
   stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
-  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

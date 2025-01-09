@@ -11,16 +11,16 @@ const Account = ({ navbarOpen }: { navbarOpen: boolean }) => {
 		<div className='group relative block'>
 			<button
 				onClick={() => setDropdown(!dropdown)}
-				className={`flex items-center rounded-lg bg-primary px-3 sm:px-5 py-2 font-satoshi text-sm sm:text-base font-medium text-white hover:bg-primary-dark transition-colors duration-200`}
+				className={`flex items-center rounded-lg bg-primary px-2.5 py-1.5 font-satoshi text-xs sm:text-sm font-medium text-white hover:bg-primary-dark transition-colors duration-200`}
 			>
 				<span className="hidden sm:inline">Account</span>
 				<span className="sm:hidden">
 					{session?.user?.name?.charAt(0) || 'A'}
 				</span>
 				<svg
-					className={`ml-1.5 transition-transform duration-200 ${dropdown ? 'rotate-180' : ''} hidden sm:block`}
-					width='19'
-					height='18'
+					className={`ml-1 transition-transform duration-200 ${dropdown ? 'rotate-180' : ''} hidden sm:block`}
+					width='16'
+					height='16'
 					viewBox='0 0 19 18'
 					fill='none'
 					xmlns='http://www.w3.org/2000/svg'
@@ -35,9 +35,9 @@ const Account = ({ navbarOpen }: { navbarOpen: boolean }) => {
 			</button>
 
 			<div
-				className={`border-[.5px] border-stroke absolute right-0 top-full z-9999 w-[280px] rounded-lg bg-white pb-2.5 pt-3.5 shadow-md transition-all duration-200 dark:bg-gray-dark ${
+				className={`border-[.5px] border-stroke absolute right-0 top-full z-9999 w-[260px] rounded-lg bg-white pb-2 pt-3 shadow-md transition-all duration-200 dark:bg-gray-dark ${
 					dropdown
-						? "visible translate-y-2 opacity-100"
+						? "visible translate-y-1 opacity-100"
 						: "invisible translate-y-0 opacity-0"
 				} ${
 					navbarOpen ? "xl:invisible xl:opacity-0" : ""

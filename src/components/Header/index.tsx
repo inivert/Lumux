@@ -63,17 +63,17 @@ const Header = () => {
 	return (
 		<>
 			<header
-				className={`fixed left-0 top-0 z-999 w-full transition-all duration-300 ease-in-out ${
+				className={`fixed left-0 top-0 z-999 w-full h-16 transition-all duration-300 ease-in-out ${
 					stickyMenu
-						? "bg-white py-3 shadow dark:bg-dark xl:py-0"
-						: "bg-transparent py-5 xl:py-0"
+						? "bg-white shadow dark:bg-dark"
+						: "bg-transparent"
 				}`}
 			>
-				<div className='relative mx-auto max-w-[1170px] items-center justify-between px-4 sm:px-8 xl:flex xl:px-0'>
-					<div className='flex w-full items-center justify-between xl:w-1/4'>
+				<div className='relative mx-auto max-w-[1170px] h-full flex items-center justify-between px-4 sm:px-8 xl:px-8 2xl:px-0'>
+					<div className='flex h-full items-center xl:w-auto xl:mr-16'>
 						<Logo />
 
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-1.5">
 							<div className="xl:hidden">
 								<ThemeSwitcher />
 							</div>
@@ -84,7 +84,7 @@ const Header = () => {
 								) : (
 									<Link
 										href='/auth/signin'
-										className='rounded-lg bg-primary px-4 py-2 font-satoshi text-sm font-medium text-white hover:bg-primary-dark'
+										className='rounded-lg bg-primary px-3 py-1.5 font-satoshi text-sm font-medium text-white hover:bg-primary-dark'
 									>
 										Sign In
 									</Link>
@@ -94,9 +94,9 @@ const Header = () => {
 							<button
 								onClick={navbarToggleHandler}
 								aria-label='Toggle menu'
-								className='relative z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-stroke bg-white dark:border-strokedark dark:bg-dark xl:hidden'
+								className='relative z-50 flex h-7 w-7 items-center justify-center rounded-lg border border-stroke bg-white dark:border-strokedark dark:bg-dark xl:hidden'
 							>
-								<span className={`relative block h-5.5 w-5.5 cursor-pointer`}>
+								<span className={`relative block h-5 w-5 cursor-pointer`}>
 									<span className={`du-block absolute right-0 h-full w-full transition-all duration-300 ${navbarOpen ? 'opacity-0' : 'opacity-100'}`}>
 										<span
 											className='relative left-0 top-0 my-1 block h-0.5 w-full rounded-sm bg-black delay-[0] duration-200 ease-in-out dark:bg-white'
@@ -133,7 +133,7 @@ const Header = () => {
 					)}
 
 					{/* Mobile Menu */}
-					<div className={`fixed inset-y-0 right-0 z-50 w-[300px] bg-white dark:bg-dark p-6 transition-transform duration-300 ease-in-out xl:static xl:block xl:w-auto xl:bg-transparent xl:p-0 xl:dark:bg-transparent ${
+					<div className={`fixed inset-y-0 right-0 z-50 w-[300px] bg-white dark:bg-dark p-6 transition-transform duration-300 ease-in-out xl:static xl:flex xl:h-full xl:flex-1 xl:items-center xl:bg-transparent xl:p-0 xl:dark:bg-transparent ${
 						navbarOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'
 					}`}>
 						<div className="mb-8 flex items-center justify-between xl:hidden">
@@ -141,16 +141,15 @@ const Header = () => {
 							<button
 								onClick={navbarToggleHandler}
 								aria-label="Close menu"
-								className="flex h-10 w-10 items-center justify-center rounded-lg border border-stroke bg-white hover:bg-gray-100 dark:border-strokedark dark:bg-dark dark:hover:bg-gray-800"
+								className="flex h-8 w-8 items-center justify-center rounded-lg border border-stroke bg-white hover:bg-gray-100 dark:border-strokedark dark:bg-dark dark:hover:bg-gray-800"
 							>
 								<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 									<path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
 								</svg>
 							</button>
 						</div>
-
 						<nav className="h-[calc(100vh-120px)] overflow-y-auto">
-							<ul className='flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-12'>
+							<ul className='flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-center xl:gap-10'>
 								{menuData?.map((item: Menu, key) =>
 									!item?.path && item?.submenu ? (
 										<Dropdown
@@ -164,7 +163,7 @@ const Header = () => {
 											key={key}
 											className={`${
 												item?.submenu ? "group relative" : "nav__menu"
-											} ${stickyMenu ? "xl:py-4" : "xl:py-6"}`}
+											} ${stickyMenu ? "xl:py-2" : "xl:py-2"}`}
 										>
 											<Link
 												onClick={() => setNavbarOpen(false)}
@@ -177,7 +176,7 @@ const Header = () => {
 												}
 												target={item?.newTab ? "_blank" : ""}
 												rel={item?.newTab ? "noopener noreferrer" : ""}
-												className={`flex rounded-lg px-4 py-2.5 font-satoshi text-base font-medium ${
+												className={`flex rounded-lg px-3 py-1.5 font-satoshi text-sm font-medium ${
 													pathUrl === item?.path
 														? "bg-primary/5 text-primary dark:bg-white/5 dark:text-white"
 														: "text-gray-600 hover:bg-primary/5 hover:text-primary dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white"
@@ -192,20 +191,18 @@ const Header = () => {
 						</nav>
 					</div>
 
-					<div className='hidden xl:flex w-full items-center justify-end space-x-4 xl:w-1/4'>
+					<div className='hidden xl:flex h-full items-center gap-6'>
 						<ThemeSwitcher />
 
 						{session?.user ? (
 							<Account navbarOpen={navbarOpen} />
 						) : (
-							<div className="flex items-center">
-								<Link
-									href='/auth/signin'
-									className='rounded-lg bg-primary px-4 py-2 font-satoshi text-base font-medium text-white hover:bg-primary-dark'
-									>
-									Sign In
-								</Link>
-							</div>
+							<Link
+								href='/auth/signin'
+								className='rounded-lg bg-primary px-4 py-2 font-satoshi text-sm font-medium text-white hover:bg-primary-dark'
+							>
+								Sign In
+							</Link>
 						)}
 					</div>
 				</div>

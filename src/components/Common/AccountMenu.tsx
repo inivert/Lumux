@@ -17,21 +17,21 @@ const AccountMenu = ({ user }: any) => {
 
 	return (
 		<>
-			<div className='mb-2 flex items-center border-b border-stroke px-4 sm:px-6 py-4 dark:border-stroke-dark'>
-				<div className='relative mr-3 h-10 w-10 sm:h-12 sm:w-12 overflow-hidden rounded-full'>
+			<div className='mb-2 flex items-center border-b border-stroke px-3 py-3 dark:border-stroke-dark'>
+				<div className='relative mr-2.5 h-8 w-8 overflow-hidden rounded-full'>
 					<Image
 						src={profilePic}
 						alt={user?.name || "profile"}
 						fill
 						className='object-cover'
-						sizes="(max-width: 640px) 40px, 48px"
+						sizes="32px"
 					/>
 				</div>
 				<div className="min-w-0">
-					<p className='font-satoshi text-sm sm:text-base font-medium text-dark dark:text-white truncate'>
+					<p className='font-satoshi text-sm font-medium text-dark dark:text-white truncate'>
 						{user?.name}
 					</p>
-					<p className='text-xs sm:text-sm text-body dark:text-gray-5 truncate'>
+					<p className='text-xs text-body dark:text-gray-5 truncate'>
 						{user?.email}
 					</p>
 				</div>
@@ -40,53 +40,74 @@ const AccountMenu = ({ user }: any) => {
 			<div className="max-h-[calc(100vh-200px)] overflow-y-auto">
 				<ul className=''>
 					{sidebarData?.map((item: any) => (
-						<li key={item?.id} className='mx-2 sm:mx-2.5 mb-1'>
+						<li key={item?.id} className='mx-2 mb-1'>
 							<Link
 								href={`${item?.path}`}
-								className={`flex w-full items-center gap-2 rounded-lg px-3 sm:px-3.5 py-3 sm:py-2.5 font-satoshi text-sm sm:text-base font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white ${
+								className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 font-satoshi text-sm font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white ${
 									pathname === item?.path
 										? "bg-gray-2 text-dark dark:bg-primary dark:text-white"
 										: ""
 								}`}
 							>
-								<span className="w-5 sm:w-auto">{item?.icon}</span>
+								<span className="w-4">{item?.icon}</span>
 								<span className="truncate">{item?.title}</span>
 							</Link>
 						</li>
 					))}
-					<li className='mt-2 sm:mt-2.5 border-t border-stroke pt-2 sm:pt-2.5 dark:border-stroke-dark'>
-						<button 
-							className='mx-2 sm:mx-2.5 w-[calc(100%-16px)] sm:w-[92%]' 
+
+					<li className='mx-2'>
+						<button
 							onClick={() => signOut()}
+							className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 font-satoshi text-sm font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'
 						>
-							<span className='flex w-full items-center gap-2 rounded-lg px-3 sm:px-3.5 py-3 sm:py-2.5 font-satoshi text-sm sm:text-base font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'>
-								<span className="w-5 sm:w-auto">
-									<svg
-										width='18'
-										height='18'
-										viewBox='0 0 18 18'
-										fill='none'
-										xmlns='http://www.w3.org/2000/svg'
-									>
-										<g clipPath='url(#clip0_2251_109)'>
-											<path
-												d='M11.209 0.9375C10.1833 0.937485 9.35657 0.937473 8.70635 1.02489C8.03127 1.11566 7.46286 1.30983 7.01142 1.76126C6.61773 2.15496 6.4188 2.63877 6.31437 3.20727C6.2129 3.75969 6.19349 4.43572 6.18897 5.24687C6.18724 5.55753 6.43768 5.81076 6.74833 5.81249C7.05899 5.81422 7.31223 5.56379 7.31396 5.25313C7.31852 4.43301 7.33982 3.8517 7.42086 3.41051C7.49895 2.9854 7.62433 2.73935 7.80692 2.55676C8.01449 2.34919 8.30592 2.21385 8.85625 2.13986C9.42276 2.0637 10.1736 2.0625 11.2502 2.0625H12.0002C13.0767 2.0625 13.8276 2.0637 14.3941 2.13986C14.9444 2.21385 15.2358 2.34919 15.4434 2.55676C15.651 2.76433 15.7863 3.05576 15.8603 3.60609C15.9365 4.1726 15.9377 4.92344 15.9377 6V12C15.9377 13.0766 15.9365 13.8274 15.8603 14.3939C15.7863 14.9442 15.651 15.2357 15.4434 15.4432C15.2358 15.6508 14.9444 15.7862 14.3941 15.8601C13.8276 15.9363 13.0767 15.9375 12.0002 15.9375H11.2502C10.1736 15.9375 9.42276 15.9363 8.85625 15.8601C8.30592 15.7862 8.01449 15.6508 7.80692 15.4432C7.62433 15.2607 7.49895 15.0146 7.42086 14.5895C7.33982 14.1483 7.31852 13.567 7.31396 12.7469C7.31223 12.4362 7.05899 12.1858 6.74833 12.1875C6.43768 12.1892 6.18724 12.4425 6.18897 12.7531C6.19349 13.5643 6.2129 14.2403 6.31437 14.7927C6.4188 15.3612 6.61773 15.845 7.01142 16.2387C7.46286 16.6902 8.03127 16.8843 8.70635 16.9751C9.35657 17.0625 10.1833 17.0625 11.209 17.0625H12.0413C13.067 17.0625 13.8937 17.0625 14.544 16.9751C15.2191 16.8843 15.7875 16.6902 16.2389 16.2387C16.6903 15.7873 16.8845 15.2189 16.9753 14.5438C17.0627 13.8936 17.0627 13.0668 17.0627 12.0412V5.95885C17.0627 4.93316 17.0627 4.10641 16.9753 3.45619C16.8845 2.78111 16.6903 2.2127 16.2389 1.76126C15.7875 1.30983 15.2191 1.11566 14.544 1.02489C13.8938 0.937473 13.067 0.937485 12.0413 0.9375H11.209Z'
-												fill='currentColor'
-											/>
-											<path
-												d='M11.25 8.4375C11.5607 8.4375 11.8125 8.68934 11.8125 9C11.8125 9.31066 11.5607 9.5625 11.25 9.5625H3.02058L4.49107 10.8229C4.72694 11.0251 4.75426 11.3802 4.55208 11.6161C4.34991 11.8519 3.9948 11.8793 3.75893 11.6771L1.13393 9.42708C1.00925 9.32022 0.9375 9.16421 0.9375 9C0.9375 8.83579 1.00925 8.67978 1.13393 8.57292L3.75893 6.32292C3.9948 6.12074 4.34991 6.14806 4.55208 6.38393C4.75426 6.6198 4.72694 6.97491 4.49107 7.17708L3.02058 8.4375H11.25Z'
-												fill='currentColor'
-											/>
-										</g>
-										<defs>
-											<clipPath id='clip0_2251_109'>
-												<rect width='18' height='18' rx='5' fill='white' />
-											</clipPath>
-										</defs>
-									</svg>
-								</span>
-								<span className="truncate">Logout</span>
+							<span className='w-4'>
+								<svg
+									width='16'
+									height='16'
+									viewBox='0 0 18 18'
+									fill='none'
+									xmlns='http://www.w3.org/2000/svg'
+								>
+									<g clipPath='url(#clip0_2251_109)'>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M3.75 2.25C3.75 1.83579 4.08579 1.5 4.5 1.5H9C9.41421 1.5 9.75 1.83579 9.75 2.25C9.75 2.66421 9.41421 3 9 3H4.5C4.08579 3 3.75 2.66421 3.75 2.25Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M3.75 15.75C3.75 15.3358 4.08579 15 4.5 15H9C9.41421 15 9.75 15.3358 9.75 15.75C9.75 16.1642 9.41421 16.5 9 16.5H4.5C4.08579 16.5 3.75 16.1642 3.75 15.75Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M2.25 3.75C2.66421 3.75 3 4.08579 3 4.5V13.5C3 13.9142 2.66421 14.25 2.25 14.25C1.83579 14.25 1.5 13.9142 1.5 13.5V4.5C1.5 4.08579 1.83579 3.75 2.25 3.75Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M6.75 9C6.75 8.58579 7.08579 8.25 7.5 8.25H15.75C16.1642 8.25 16.5 8.58579 16.5 9C16.5 9.41421 16.1642 9.75 15.75 9.75H7.5C7.08579 9.75 6.75 9.41421 6.75 9Z'
+											fill='currentColor'
+										/>
+										<path
+											fillRule='evenodd'
+											clipRule='evenodd'
+											d='M11.4697 4.71967C11.7626 4.42678 12.2374 4.42678 12.5303 4.71967L16.2803 8.46967C16.5732 8.76256 16.5732 9.23744 16.2803 9.53033L12.5303 13.2803C12.2374 13.5732 11.7626 13.5732 11.4697 13.2803C11.1768 12.9874 11.1768 12.5126 11.4697 12.2197L14.6893 9L11.4697 5.78033C11.1768 5.48744 11.1768 5.01256 11.4697 4.71967Z'
+											fill='currentColor'
+										/>
+									</g>
+									<defs>
+										<clipPath id='clip0_2251_109'>
+											<rect width='18' height='18' rx='5' fill='white' />
+										</clipPath>
+									</defs>
+								</svg>
 							</span>
+							<span className="truncate">Logout</span>
 						</button>
 					</li>
 				</ul>

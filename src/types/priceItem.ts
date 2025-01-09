@@ -1,10 +1,8 @@
-export type Price = {
-	priceId?: string;
-	subscriptionId?: string;
-	currentPeriodEnd?: Date;
-	customerId?: string;
-	isSubscribed?: boolean;
-	isCanceled?: boolean;
+export interface Price {
+	priceId: string;
+	yearlyPriceId: string;
+	monthly_unit_amount: number;
+	yearly_unit_amount: number;
 	nickname: string;
 	description: string;
 	subtitle: string;
@@ -13,7 +11,4 @@ export type Price = {
 	icon2?: string;
 	active?: boolean;
 	isAddon?: boolean;
-  	yearlyPriceId?: string;
-	monthly_unit_amount: number;
-	yearly_unit_amount: number;
-};
+}
