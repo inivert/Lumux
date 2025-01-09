@@ -6,7 +6,6 @@ export default withAuth(
 		const token = req.nextauth.token;
 		const { pathname, search } = req.nextUrl;
 		const isAuthPage = pathname.startsWith("/auth");
-		const isNoInvitationPage = pathname === "/auth/no-invitation";
 		const isSignInPage = pathname === "/auth/signin";
 		const isCallbackPage = pathname.startsWith("/api/auth/callback");
 		const isVerifyRequestPage = pathname === "/auth/verify-request";
@@ -21,13 +20,8 @@ export default withAuth(
 			return NextResponse.redirect(new URL("/auth/signin", req.url));
 		}
 
-		// If user is logged in but has no invitation
-		if (token && !isAuthPage && !token.hasInvitation && !isNoInvitationPage) {
-			return NextResponse.redirect(new URL("/auth/no-invitation", req.url));
-		}
-
 		// If user is logged in and trying to access auth pages
-		if (token && isAuthPage && !isNoInvitationPage) {
+		if (token && isAuthPage) {
 			// Don't redirect if it's a sign-in page with a callback URL
 			if (isSignInPage && search.includes("callbackUrl")) {
 				return NextResponse.next();

@@ -19,6 +19,7 @@ declare module "next-auth" {
 
 	interface JWT {
 		hasInvitation?: boolean;
+		role?: string;
 	}
 }
 
@@ -175,7 +176,7 @@ export const authOptions: NextAuthOptions = {
 
 	callbacks: {
 		async signIn({ user, account, profile, email, credentials }) {
-			// Skip invitation check for impersonation and fetchSession
+			// Skip checks for impersonation and fetchSession
 			if (credentials && (credentials.adminEmail || credentials.email)) {
 				return true;
 			}
@@ -183,92 +184,36 @@ export const authOptions: NextAuthOptions = {
 			const userEmail = user.email?.toLowerCase();
 			if (!userEmail) return false;
 
-			// Check if user exists
+			// Check if user exists in users table
 			const existingUser = await prisma.user.findUnique({
-				where: { email: userEmail },
-				include: { invitation: true }
+				where: { email: userEmail }
 			});
 
 			if (existingUser) {
-				// Check if user has a valid invitation
-				const hasValidInvitation = existingUser.invitation.some(inv => 
-					inv.email === userEmail && 
-					(inv.accepted || new Date() < inv.expiresAt)
-				);
-				
-				if (!hasValidInvitation && existingUser.role !== "ADMIN") {
-					throw new Error("No valid invitation found. Please contact the administrator.");
-				}
-				
 				return true;
 			}
 
-			// Only check for invitation if using email provider
-			if (account?.provider === 'email') {
-				// Check for valid invitation
-				const invitation = await prisma.invitation.findFirst({
-					where: {
+			// If user doesn't exist, create them
+			try {
+				// Create the user
+				const newUser = await prisma.user.create({
+					data: {
 						email: userEmail,
-						accepted: false,
-						expiresAt: { gt: new Date() }
+						name: user.name || userEmail.split('@')[0],
+						image: user.image,
+						role: "USER", // Default to USER role
 					}
 				});
 
-				if (!invitation) {
-					throw new Error("You need an invitation to sign up. Please check your email invitation.");
-				}
-
-				// If we have a valid invitation, allow sign in and update the invitation
-				await prisma.invitation.update({
-					where: { id: invitation.id },
-					data: { accepted: true }
-				});
+				// Update the user object with the new data
+				user.role = newUser.role;
+				user.id = newUser.id;
 
 				return true;
-			} else {
-				// Block other providers if user doesn't exist
-				throw new Error("This is a private application. Please use your invitation email to sign in.");
+			} catch (error) {
+				console.error("Error during user creation:", error);
+				return false;
 			}
-		},
-
-		async redirect({ url, baseUrl }) {
-			// Decode URL to handle nested encoding
-			const decodedUrl = decodeURIComponent(url);
-			
-			// Handle email verification callback
-			if (decodedUrl.includes('/api/auth/callback/email')) {
-				const session = await getAuthSession();
-				if (session?.user) {
-					return session.user.role === "ADMIN" ? `${baseUrl}/admin` : `${baseUrl}/user`;
-				}
-				return `${baseUrl}/user`;
-			}
-
-			// Handle error pages
-			if (decodedUrl.startsWith('/auth/error')) {
-				return decodedUrl;
-			}
-
-			// Prevent infinite loops by checking for nested callbackUrls
-			if (decodedUrl.includes('callbackUrl=')) {
-				const urlObj = new URL(decodedUrl);
-				const callbackUrl = urlObj.searchParams.get('callbackUrl');
-				if (callbackUrl) {
-					// If the callback URL is also a sign-in page, redirect to base URL
-					if (callbackUrl.includes('/auth/signin')) {
-						return baseUrl;
-					}
-					// If it's a valid internal URL, use it
-					if (callbackUrl.startsWith(baseUrl)) {
-						return callbackUrl;
-					}
-				}
-			}
-
-			// Default redirect rules
-			if (decodedUrl.startsWith(baseUrl)) return decodedUrl;
-			if (decodedUrl.startsWith("/")) return `${baseUrl}${decodedUrl}`;
-			return baseUrl;
 		},
 
 		async jwt({ token, user, account, profile, trigger, session }) {
@@ -276,60 +221,68 @@ export const authOptions: NextAuthOptions = {
 				return {
 					...token,
 					...session.user,
-					picture: session.user.image,
-					image: session.user.image,
-					priceId: session.user.priceId,
-					currentPeriodEnd: session.user.currentPeriodEnd,
-					subscriptionId: session.user.subscriptionId,
-					customerId: session.user.customerId,
-					hasInvitation: session.user.hasInvitation,
 				};
 			}
 
 			if (user) {
-				// Check for valid invitation
-				const invitation = await prisma.invitation.findFirst({
-					where: {
-						email: user.email || "",
-						OR: [
-							{ accepted: true },
-							{ expiresAt: { gt: new Date() } }
-						]
-					}
-				});
-
 				return {
 					...token,
 					id: user.id,
-					priceId: user.priceId,
-					currentPeriodEnd: user.currentPeriodEnd,
-					subscriptionId: user.subscriptionId,
 					role: user.role,
+					email: user.email,
+					name: user.name,
 					picture: user.image,
-					image: user.image,
-					hasInvitation: !!invitation || user.role === "ADMIN",
 				};
 			}
 			return token;
 		},
 
-		async session({ session, token, user }) {
+		async session({ session, token }) {
 			if (session?.user) {
 				return {
 					...session,
 					user: {
 						...session.user,
-						id: token.id || token.sub,
-						priceId: token.priceId,
-						currentPeriodEnd: token.currentPeriodEnd,
-						subscriptionId: token.subscriptionId,
+						id: token.id,
 						role: token.role,
-						image: token.picture || token.image,
-						hasInvitation: token.hasInvitation,
 					},
 				};
 			}
 			return session;
+		},
+
+		async redirect({ url, baseUrl }) {
+			const decodedUrl = decodeURIComponent(url);
+			
+			// For magic link authentication
+			if (decodedUrl.includes('/api/auth/callback/email')) {
+				const session = await getServerSession(authOptions);
+				if (session?.user?.role === "ADMIN") {
+					return `${baseUrl}/admin`;
+				}
+				return `${baseUrl}/user`;
+			}
+
+			if (decodedUrl.startsWith('/auth/error')) {
+				return decodedUrl;
+			}
+
+			if (decodedUrl.includes('callbackUrl=')) {
+				const urlObj = new URL(decodedUrl);
+				const callbackUrl = urlObj.searchParams.get('callbackUrl');
+				if (callbackUrl) {
+					if (callbackUrl.includes('/auth/signin')) {
+						return baseUrl;
+					}
+					if (callbackUrl.startsWith(baseUrl)) {
+						return callbackUrl;
+					}
+				}
+			}
+
+			if (decodedUrl.startsWith(baseUrl)) return decodedUrl;
+			if (decodedUrl.startsWith("/")) return `${baseUrl}${decodedUrl}`;
+			return baseUrl;
 		},
 	},
 };

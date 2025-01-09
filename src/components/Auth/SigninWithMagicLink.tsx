@@ -20,7 +20,25 @@ export default function SigninWithMagicLink() {
 		setEmail(e.target.value);
 	};
 
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+	const checkEmailAccess = async (email: string) => {
+		try {
+			const res = await fetch('/api/auth/check-email-access', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ email }),
+			});
+
+			const data = await res.json();
+			return data.hasAccess;
+		} catch (error) {
+			console.error('Error checking email access:', error);
+			return false;
+		}
+	};
+
+	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setLoading(true);
 
@@ -39,23 +57,31 @@ export default function SigninWithMagicLink() {
 		if (!validateEmail(email)) {
 			setLoading(false);
 			return toast.error("Please enter a valid email address.");
-		} else {
-			signIn("email", {
-				redirect: false,
-				email,
-			})
-				.then((callback) => {
-					if (callback?.ok) {
-						toast.success("Email sent");
-						setEmail("");
-						setLoading(false);
-					}
-				})
-				.catch((error) => {
-					toast.error(error);
-					setLoading(false);
-				});
 		}
+
+		// Check if email has access (either in users or invitations table)
+		const hasAccess = await checkEmailAccess(email);
+		if (!hasAccess) {
+			setLoading(false);
+			return toast.error("This email does not have access. Please contact the administrator.");
+		}
+
+		// Proceed with magic link signin
+		signIn("email", {
+			redirect: false,
+			email,
+		})
+			.then((callback) => {
+				if (callback?.ok) {
+					toast.success("Magic link sent to your email");
+					setEmail("");
+					setLoading(false);
+				}
+			})
+			.catch((error) => {
+				toast.error(error);
+				setLoading(false);
+			});
 	};
 
 	return (
@@ -75,7 +101,7 @@ export default function SigninWithMagicLink() {
 				<FormButton height='50px'>
 					{loading ? (
 						<>
-							Sending <Loader style='border-white dark:border-dark' />
+							Checking <Loader style='border-white dark:border-dark' />
 						</>
 					) : (
 						"Send magic link"
