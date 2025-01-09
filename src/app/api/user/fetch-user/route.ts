@@ -20,7 +20,7 @@ export async function POST() {
     }
 
     // Rate limiting
-    const headersList = headers();
+    const headersList = await headers();
     const clientIp = headersList.get("x-forwarded-for") || "unknown";
     const now = Date.now();
     const rateLimitInfo = rateLimit.get(clientIp) || { count: 0, timestamp: now };

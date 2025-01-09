@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import Dropdown from "./Dropdown";
 import ThemeSwitcher from "./ThemeSwitcher";
 import { menuData } from "./menuData";
-import GlobalSearchModal from "../GlobalSearch";
 import Account from "./Account";
 import { useSession } from "next-auth/react";
 import { onScroll } from "@/libs/scrollActive";
@@ -17,7 +16,6 @@ import Logo from "../Common/Logo";
 
 const Header = () => {
 	const [stickyMenu, setStickyMenu] = useState(false);
-	const [searchModalOpen, setSearchModalOpen] = useState(false);
 	const { data: session } = useSession();
 
 	const pathUrl = usePathname();
@@ -34,6 +32,12 @@ const Header = () => {
 	const [navbarOpen, setNavbarOpen] = useState(false);
 	const navbarToggleHandler = () => {
 		setNavbarOpen(!navbarOpen);
+		// Prevent scrolling when menu is open
+		if (!navbarOpen) {
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = 'unset';
+		}
 	};
 
 	useEffect(() => {
@@ -43,68 +47,110 @@ const Header = () => {
 
 		return () => {
 			window.removeEventListener("scroll", onScroll);
+			// Reset overflow when component unmounts
+			document.body.style.overflow = 'unset';
 		};
 	}, []);
 
 	useEffect(() => {
 		window.addEventListener("scroll", handleStickyMenu);
-	});
+		
+		return () => {
+			window.removeEventListener("scroll", handleStickyMenu);
+		};
+	}, []);
 
 	return (
 		<>
 			<header
-				className={`fixed left-0 top-0 z-999 w-full transition-all duration-300 ease-in-out  ${
+				className={`fixed left-0 top-0 z-999 w-full transition-all duration-300 ease-in-out ${
 					stickyMenu
-						? "bg-white py-4 shadow dark:bg-dark xl:py-0"
-						: "bg-transparent py-7 xl:py-0"
+						? "bg-white py-3 shadow dark:bg-dark xl:py-0"
+						: "bg-transparent py-5 xl:py-0"
 				}`}
 			>
 				<div className='relative mx-auto max-w-[1170px] items-center justify-between px-4 sm:px-8 xl:flex xl:px-0'>
 					<div className='flex w-full items-center justify-between xl:w-1/4'>
 						<Logo />
 
-						<button
-							onClick={navbarToggleHandler}
-							aria-label='button for menu toggle'
-							className='block xl:hidden'
-						>
-							<span className='relative block h-5.5 w-5.5 cursor-pointer'>
-								<span className='du-block absolute right-0 h-full w-full'>
-									<span
-										className={`relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-black delay-[0] duration-200 ease-in-out dark:bg-white ${
-											!navbarOpen && "!w-full delay-300"
-										}`}
-									></span>
-									<span
-										className={`relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-black delay-150 duration-200 ease-in-out dark:bg-white ${
-											!navbarOpen && "delay-400 !w-full"
-										}`}
-									></span>
-									<span
-										className={`relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-black delay-200 duration-200 ease-in-out dark:bg-white ${
-											!navbarOpen && "!w-full delay-500"
-										}`}
-									></span>
+						<div className="flex items-center gap-2">
+							<div className="xl:hidden">
+								<ThemeSwitcher />
+							</div>
+
+							<div className="xl:hidden">
+								{session?.user ? (
+									<Account navbarOpen={navbarOpen} />
+								) : (
+									<Link
+										href='/auth/signin'
+										className='rounded-lg bg-primary px-4 py-2 font-satoshi text-sm font-medium text-white hover:bg-primary-dark'
+									>
+										Sign In
+									</Link>
+								)}
+							</div>
+
+							<button
+								onClick={navbarToggleHandler}
+								aria-label='Toggle menu'
+								className='relative z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-stroke bg-white dark:border-strokedark dark:bg-dark xl:hidden'
+							>
+								<span className={`relative block h-5.5 w-5.5 cursor-pointer`}>
+									<span className={`du-block absolute right-0 h-full w-full transition-all duration-300 ${navbarOpen ? 'opacity-0' : 'opacity-100'}`}>
+										<span
+											className='relative left-0 top-0 my-1 block h-0.5 w-full rounded-sm bg-black delay-[0] duration-200 ease-in-out dark:bg-white'
+										></span>
+										<span
+											className='relative left-0 top-0 my-1 block h-0.5 w-full rounded-sm bg-black delay-150 duration-200 ease-in-out dark:bg-white'
+										></span>
+										<span
+											className='relative left-0 top-0 my-1 block h-0.5 w-full rounded-sm bg-black delay-200 duration-200 ease-in-out dark:bg-white'
+										></span>
+									</span>
+									<span className={`du-block absolute right-0 h-full w-full transition-all duration-300 ${navbarOpen ? 'opacity-100' : 'opacity-0'}`}>
+										<span
+											className='absolute left-2.5 top-0 block h-full w-0.5 rounded-sm bg-black dark:bg-white'
+											style={{ transform: navbarOpen ? 'rotate(45deg)' : 'rotate(0)' }}
+										></span>
+										<span
+											className='absolute left-0 top-2.5 block h-0.5 w-full rounded-sm bg-black dark:bg-white'
+											style={{ transform: navbarOpen ? 'rotate(45deg)' : 'rotate(0)' }}
+										></span>
+									</span>
 								</span>
-								<span className='du-block absolute right-0 h-full w-full rotate-45'>
-									<span
-										className={`absolute left-2.5 top-0 block h-full w-0.5 rounded-sm bg-black delay-300 duration-200 ease-in-out dark:bg-white ${
-											!navbarOpen && "!h-0 delay-[0]"
-										}`}
-									></span>
-									<span
-										className={`delay-400 absolute left-0 top-2.5 block h-0.5 w-full rounded-sm bg-black duration-200 ease-in-out dark:bg-white ${
-											!navbarOpen && "dealy-200 !h-0"
-										}`}
-									></span>
-								</span>
-							</span>
-						</button>
+							</button>
+						</div>
 					</div>
 
-					<div className='flex items-center justify-center xl:w-1/2'>
-						<nav className="w-full">
-							<ul className='flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-center xl:gap-12'>
+					{/* Mobile Menu Backdrop */}
+					{navbarOpen && (
+						<div 
+							className="fixed inset-0 bg-black/20 backdrop-blur-sm xl:hidden"
+							onClick={navbarToggleHandler}
+							aria-hidden="true"
+						/>
+					)}
+
+					{/* Mobile Menu */}
+					<div className={`fixed inset-y-0 right-0 z-50 w-[300px] bg-white dark:bg-dark p-6 transition-transform duration-300 ease-in-out xl:static xl:block xl:w-auto xl:bg-transparent xl:p-0 xl:dark:bg-transparent ${
+						navbarOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'
+					}`}>
+						<div className="mb-8 flex items-center justify-between xl:hidden">
+							<h3 className="text-xl font-bold text-black dark:text-white">Menu</h3>
+							<button
+								onClick={navbarToggleHandler}
+								aria-label="Close menu"
+								className="flex h-10 w-10 items-center justify-center rounded-lg border border-stroke bg-white hover:bg-gray-100 dark:border-strokedark dark:bg-dark dark:hover:bg-gray-800"
+							>
+								<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+								</svg>
+							</button>
+						</div>
+
+						<nav className="h-[calc(100vh-120px)] overflow-y-auto">
+							<ul className='flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-12'>
 								{menuData?.map((item: Menu, key) =>
 									!item?.path && item?.submenu ? (
 										<Dropdown
@@ -131,7 +177,7 @@ const Header = () => {
 												}
 												target={item?.newTab ? "_blank" : ""}
 												rel={item?.newTab ? "noopener noreferrer" : ""}
-												className={`flex rounded-lg px-4 py-2 font-satoshi text-base font-medium ${
+												className={`flex rounded-lg px-4 py-2.5 font-satoshi text-base font-medium ${
 													pathUrl === item?.path
 														? "bg-primary/5 text-primary dark:bg-white/5 dark:text-white"
 														: "text-gray-600 hover:bg-primary/5 hover:text-primary dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white"
@@ -146,37 +192,7 @@ const Header = () => {
 						</nav>
 					</div>
 
-					<div className='flex w-full items-center justify-end space-x-4 xl:w-1/4'>
-						<button
-							onClick={() => setSearchModalOpen(true)}
-							className='text-gray-600 flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-						>
-							<svg
-								width='20'
-								height='20'
-								viewBox='0 0 18 18'
-								fill='currentColor'
-								xmlns='http://www.w3.org/2000/svg'
-							>
-								<g clipPath='url(#clip0_369_1884)'>
-									<path
-										d='M16.9347 15.3963L12.4816 11.7799C14.3168 9.26991 14.1279 5.68042 11.8338 3.41337C10.6194 2.19889 9.00003 1.52417 7.27276 1.52417C5.54549 1.52417 3.92617 2.19889 2.71168 3.41337C0.201738 5.92332 0.201738 10.0256 2.71168 12.5355C3.92617 13.75 5.54549 14.4247 7.27276 14.4247C8.91907 14.4247 10.4574 13.804 11.6719 12.6975L16.179 16.3409C16.287 16.4219 16.4219 16.4759 16.5569 16.4759C16.7458 16.4759 16.9077 16.3949 17.0157 16.26C17.2316 15.9901 17.2046 15.6122 16.9347 15.3963ZM7.27276 13.2102C5.86935 13.2102 4.5739 12.6705 3.57532 11.6719C1.52418 9.62076 1.52418 6.30116 3.57532 4.27701C4.5739 3.27843 5.86935 2.73866 7.27276 2.73866C8.67617 2.73866 9.97162 3.27843 10.9702 4.27701C13.0213 6.32815 13.0213 9.64775 10.9702 11.6719C9.99861 12.6705 8.67617 13.2102 7.27276 13.2102Z'
-										fill='currentColor'
-									/>
-								</g>
-								<defs>
-									<clipPath id='clip0_369_1884'>
-										<rect
-											width='17.2727'
-											height='17.2727'
-											fill='white'
-											transform='translate(0.363647 0.363647)'
-										/>
-									</clipPath>
-								</defs>
-							</svg>
-						</button>
-
+					<div className='hidden xl:flex w-full items-center justify-end space-x-4 xl:w-1/4'>
 						<ThemeSwitcher />
 
 						{session?.user ? (
@@ -194,11 +210,6 @@ const Header = () => {
 					</div>
 				</div>
 			</header>
-
-			<GlobalSearchModal
-				searchModalOpen={searchModalOpen}
-				setSearchModalOpen={setSearchModalOpen}
-			/>
 		</>
 	);
 };

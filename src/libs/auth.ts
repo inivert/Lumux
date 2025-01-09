@@ -14,6 +14,7 @@ declare module "next-auth" {
 	interface Session extends DefaultSession {
 		user: User & DefaultSession["user"] & {
 			hasInvitation?: boolean;
+			role?: string;
 		};
 	}
 
@@ -202,13 +203,14 @@ export const authOptions: NextAuthOptions = {
 			}
 
 			if (user) {
+				const dbUser = user as User;
 				return {
 					...token,
-					id: user.id,
-					role: user.role,
-					email: user.email,
-					name: user.name,
-					picture: user.image,
+					id: dbUser.id,
+					role: dbUser.role,
+					email: dbUser.email,
+					name: dbUser.name,
+					picture: dbUser.image,
 				};
 			}
 			return token;

@@ -76,6 +76,7 @@ model User {
   sessions              Session[]
   apiKeys               ApiKey[]
   invitation            Invitation[]
+  subscription          Subscription?
 }
 
 model VerificationToken {
@@ -85,4 +86,14 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Subscription {
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
+  stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
+  stripePriceId          String?   @map(name: "stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -17,7 +17,7 @@ export const sendInvitationEmail = async ({
   try {
     const data = await resend.emails.send({
       from: "Carlos @ CodeLumus <carlos@codelumus.com>",
-      reply_to: "carlos@codelumus.com",
+      replyTo: "carlos@codelumus.com",
       to: email,
       subject: "You've been invited to join CodeLumus! 🎉",
       react: InvitationEmail({ email, role }),

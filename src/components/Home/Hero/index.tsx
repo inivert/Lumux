@@ -4,11 +4,11 @@ import Link from "next/link";
 
 const Hero = () => {
 	return (
-		<section className='relative z-1 overflow-hidden pb-17.5 pt-30 lg:pb-20 lg:pt-30 xl:pb-25 xl:pt-[170px]'>
+		<section className='relative z-1 overflow-hidden pb-10 pt-20 sm:pb-17.5 sm:pt-30 lg:pb-20 lg:pt-30 xl:pb-25 xl:pt-[170px]'>
 			<div className='mx-auto w-full max-w-[740px] px-4 text-center sm:px-8 xl:px-0'>
-				<h1 className='mb-5 font-satoshi text-heading-4 font-bold -tracking-[1.6px] text-black dark:text-white lg:text-heading-2 xl:text-[58px] xl:leading-[1.12]'>
-					Professional{" "}
-					<span className='relative text-primary'>
+				<h1 className='mb-4 sm:mb-5 font-satoshi text-3xl sm:text-4xl font-bold -tracking-[1.6px] text-black dark:text-white lg:text-heading-2 xl:text-[58px] xl:leading-[1.12]'>
+					<span className="block sm:inline">Professional</span>{" "}
+					<span className='relative inline-block text-primary'>
 						Website Management
 						<span className='absolute bottom-0.5 left-0 h-2 w-full pl-1 pr-2'>
 							<svg
@@ -27,10 +27,10 @@ const Hero = () => {
 							</svg>
 						</span>
 					</span>{" "}
-					Service
+					<span className="block sm:inline">Service</span>
 				</h1>
 
-				<p className='mx-auto mb-7.5 w-full max-w-[580px] text-lg -tracking-[0.2px] dark:text-gray-5'>
+				<p className='mx-auto mb-6 sm:mb-7.5 w-full max-w-[580px] text-base sm:text-lg -tracking-[0.2px] dark:text-gray-5 px-4 sm:px-0'>
 					A complete website management service with all essential features,
 					integrations, and tools you need to maintain and grow your website.
 					Let us handle the technical details while you focus on your business.
@@ -38,10 +38,10 @@ const Hero = () => {
 
 				<Link
 					href='/auth/signin'
-					className='inline-flex items-center gap-4 rounded-full bg-black py-2 pl-7.5 pr-2 font-satoshi font-medium text-white hover:bg-opacity-90 dark:bg-primary'
+					className='inline-flex items-center gap-2 sm:gap-4 rounded-full bg-black py-2 pl-5 sm:pl-7.5 pr-2 font-satoshi font-medium text-white hover:bg-opacity-90 dark:bg-primary text-sm sm:text-base'
 				>
 					<span> Get Started </span>
-					<span className='inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white dark:bg-white dark:text-primary'>
+					<span className='inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-primary text-white dark:bg-white dark:text-primary'>
 						<svg
 							className='fill-current'
 							width='20'
@@ -61,21 +61,27 @@ const Hero = () => {
 			</div>
 
 			{/* <!-- Hero Bg Shapes --> */}
-			<div className='hidden sm:block'>
-				<div className='absolute left-0 top-0 -z-1'>
+			<div className='sm:block'>
+				<div className='absolute left-0 top-0 -z-1 opacity-30 sm:opacity-100'>
 					<Image
 						src='/images/hero/hero-shape-01.svg'
 						alt='shape'
 						width={340}
 						height={480}
+						priority
+						className="w-[200px] sm:w-[340px] h-auto"
+						sizes="(max-width: 640px) 200px, 340px"
 					/>
 				</div>
-				<div className='absolute right-0 top-0 -z-1'>
+				<div className='absolute right-0 top-0 -z-1 opacity-30 sm:opacity-100'>
 					<Image
 						src='/images/hero/hero-shape-02.svg'
 						alt='shape'
 						width={340}
 						height={480}
+						priority
+						className="w-[200px] sm:w-[340px] h-auto"
+						sizes="(max-width: 640px) 200px, 340px"
 					/>
 				</div>
 			</div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { userMenuData, adminMenuData } from "@/staticData/sidebarData";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const AccountMenu = ({ user }: any) => {
 	const pathname = usePathname();
@@ -16,43 +17,50 @@ const AccountMenu = ({ user }: any) => {
 
 	return (
 		<>
-			<div className='mb-2 flex items-center border-b border-stroke px-6 pb-3.5 dark:border-stroke-dark'>
-				<div className='mr-3'>
-					<img
+			<div className='mb-2 flex items-center border-b border-stroke px-4 sm:px-6 py-4 dark:border-stroke-dark'>
+				<div className='relative mr-3 h-10 w-10 sm:h-12 sm:w-12 overflow-hidden rounded-full'>
+					<Image
 						src={profilePic}
 						alt={user?.name || "profile"}
-						className='h-[48px] w-[48px] overflow-hidden rounded-full'
+						fill
+						className='object-cover'
+						sizes="(max-width: 640px) 40px, 48px"
 					/>
 				</div>
-				<div>
-					<p className='font-satoshi text-base font-medium text-dark dark:text-white'>
+				<div className="min-w-0">
+					<p className='font-satoshi text-sm sm:text-base font-medium text-dark dark:text-white truncate'>
 						{user?.name}
 					</p>
-					<p className='text-sm text-body dark:text-gray-5'>{user?.email}</p>
+					<p className='text-xs sm:text-sm text-body dark:text-gray-5 truncate'>
+						{user?.email}
+					</p>
 				</div>
 			</div>
-			{/* px-2.5 */}
-			<div>
+
+			<div className="max-h-[calc(100vh-200px)] overflow-y-auto">
 				<ul className=''>
 					{sidebarData?.map((item: any) => (
-						<li key={item?.id} className='mx-2.5 mb-1'>
+						<li key={item?.id} className='mx-2 sm:mx-2.5 mb-1'>
 							<Link
 								href={`${item?.path}`}
-								className={`flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 font-satoshi font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white ${
+								className={`flex w-full items-center gap-2 rounded-lg px-3 sm:px-3.5 py-3 sm:py-2.5 font-satoshi text-sm sm:text-base font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white ${
 									pathname === item?.path
 										? "bg-gray-2 text-dark dark:bg-primary dark:text-white"
 										: ""
 								}`}
 							>
-								<span>{item?.icon}</span>
-								{item?.title}
+								<span className="w-5 sm:w-auto">{item?.icon}</span>
+								<span className="truncate">{item?.title}</span>
 							</Link>
 						</li>
 					))}
-					<li className='mt-2.5 border-t border-stroke pt-2.5 dark:border-stroke-dark'>
-						<button className='mx-2.5 w-[92%]' onClick={() => signOut()}>
-							<span className='flex w-full items-center gap-2 rounded-lg px-3.5 py-2 font-satoshi font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'>
-								<span>
+					<li className='mt-2 sm:mt-2.5 border-t border-stroke pt-2 sm:pt-2.5 dark:border-stroke-dark'>
+						<button 
+							className='mx-2 sm:mx-2.5 w-[calc(100%-16px)] sm:w-[92%]' 
+							onClick={() => signOut()}
+						>
+							<span className='flex w-full items-center gap-2 rounded-lg px-3 sm:px-3.5 py-3 sm:py-2.5 font-satoshi text-sm sm:text-base font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'>
+								<span className="w-5 sm:w-auto">
 									<svg
 										width='18'
 										height='18'
@@ -77,7 +85,7 @@ const AccountMenu = ({ user }: any) => {
 										</defs>
 									</svg>
 								</span>
-								Logout
+								<span className="truncate">Logout</span>
 							</span>
 						</button>
 					</li>
