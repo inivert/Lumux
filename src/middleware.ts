@@ -2,43 +2,68 @@ import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 export default withAuth(
-	function middleware(req) {
-		const { pathname } = req.nextUrl;
+	async function middleware(req) {
+		const token = req.nextauth.token;
+		const { pathname, search } = req.nextUrl;
+		const isAuthPage = pathname.startsWith("/auth");
+		const isNoInvitationPage = pathname === "/auth/no-invitation";
+		const isSignInPage = pathname === "/auth/signin";
+		const isCallbackPage = pathname.startsWith("/api/auth/callback");
+		const isVerifyRequestPage = pathname === "/auth/verify-request";
 
-		// Allow email verification callback to proceed
-		if (pathname.startsWith('/api/auth/callback/email')) {
+		// Allow access to auth-related pages without redirection
+		if (isCallbackPage || isVerifyRequestPage) {
 			return NextResponse.next();
 		}
 
-		// Add security headers
-		const response = NextResponse.next();
-		response.headers.set("X-Frame-Options", "DENY");
-		response.headers.set("X-Content-Type-Options", "nosniff");
-		response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-		return response;
+		// If user is not logged in and trying to access protected routes
+		if (!token && !isAuthPage) {
+			return NextResponse.redirect(new URL("/auth/signin", req.url));
+		}
+
+		// If user is logged in but has no invitation
+		if (token && !isAuthPage && !token.hasInvitation && !isNoInvitationPage) {
+			return NextResponse.redirect(new URL("/auth/no-invitation", req.url));
+		}
+
+		// If user is logged in and trying to access auth pages
+		if (token && isAuthPage && !isNoInvitationPage) {
+			// Don't redirect if it's a sign-in page with a callback URL
+			if (isSignInPage && search.includes("callbackUrl")) {
+				return NextResponse.next();
+			}
+
+			if (token.role === "ADMIN") {
+				return NextResponse.redirect(new URL("/admin", req.url));
+			}
+			return NextResponse.redirect(new URL("/user", req.url));
+		}
+
+		return NextResponse.next();
 	},
 	{
 		callbacks: {
 			authorized: ({ token, req }) => {
-				// Allow email verification callback to proceed
-				if (req.nextUrl.pathname.startsWith('/api/auth/callback/email')) {
+				// Allow access to auth-related pages without authorization
+				if (
+					req.nextUrl.pathname.startsWith("/auth") ||
+					req.nextUrl.pathname.startsWith("/api/auth/callback")
+				) {
 					return true;
 				}
 				return !!token;
 			},
 		},
-		pages: {
-			signIn: "/auth/signin",
-		},
 	}
 );
 
-// Protect these paths with authentication
 export const config = {
 	matcher: [
-		"/dashboard/:path*",
-		"/user/:path*",
 		"/admin/:path*",
-		"/api/auth/callback/email",
+		"/user/:path*",
+		"/auth/:path*",
+		"/api/user/:path*",
+		"/api/admin/:path*",
+		"/api/auth/callback/:path*",
 	],
 };

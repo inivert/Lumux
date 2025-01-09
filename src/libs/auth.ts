@@ -12,7 +12,13 @@ import crypto from "crypto";
 
 declare module "next-auth" {
 	interface Session extends DefaultSession {
-		user: User & DefaultSession["user"];
+		user: User & DefaultSession["user"] & {
+			hasInvitation?: boolean;
+		};
+	}
+
+	interface JWT {
+		hasInvitation?: boolean;
 	}
 }
 
@@ -183,7 +189,19 @@ export const authOptions: NextAuthOptions = {
 				include: { invitation: true }
 			});
 
-			if (existingUser) return true; // Allow existing users to sign in
+			if (existingUser) {
+				// Check if user has a valid invitation
+				const hasValidInvitation = existingUser.invitation.some(inv => 
+					inv.email === userEmail && 
+					(inv.accepted || new Date() < inv.expiresAt)
+				);
+				
+				if (!hasValidInvitation && existingUser.role !== "ADMIN") {
+					throw new Error("No valid invitation found. Please contact the administrator.");
+				}
+				
+				return true;
+			}
 
 			// Only check for invitation if using email provider
 			if (account?.provider === 'email') {
@@ -214,28 +232,42 @@ export const authOptions: NextAuthOptions = {
 		},
 
 		async redirect({ url, baseUrl }) {
+			// Decode URL to handle nested encoding
+			const decodedUrl = decodeURIComponent(url);
+			
 			// Handle email verification callback
-			if (url.includes('/api/auth/callback/email')) {
-				const callbackUrl = new URL(url).searchParams.get('callbackUrl');
-				if (callbackUrl && callbackUrl.startsWith(baseUrl)) {
-					// Get user role from session
-					const session = await getAuthSession();
-					if (session?.user) {
-						return session.user.role === "ADMIN" ? `${baseUrl}/admin` : `${baseUrl}/user`;
-					}
+			if (decodedUrl.includes('/api/auth/callback/email')) {
+				const session = await getAuthSession();
+				if (session?.user) {
+					return session.user.role === "ADMIN" ? `${baseUrl}/admin` : `${baseUrl}/user`;
 				}
-				// Default to user dashboard if no session yet
 				return `${baseUrl}/user`;
 			}
-			
+
 			// Handle error pages
-			if (url.startsWith('/auth/error')) {
-				return url;
+			if (decodedUrl.startsWith('/auth/error')) {
+				return decodedUrl;
 			}
-			
+
+			// Prevent infinite loops by checking for nested callbackUrls
+			if (decodedUrl.includes('callbackUrl=')) {
+				const urlObj = new URL(decodedUrl);
+				const callbackUrl = urlObj.searchParams.get('callbackUrl');
+				if (callbackUrl) {
+					// If the callback URL is also a sign-in page, redirect to base URL
+					if (callbackUrl.includes('/auth/signin')) {
+						return baseUrl;
+					}
+					// If it's a valid internal URL, use it
+					if (callbackUrl.startsWith(baseUrl)) {
+						return callbackUrl;
+					}
+				}
+			}
+
 			// Default redirect rules
-			if (url.startsWith("/")) return `${baseUrl}${url}`;
-			if (new URL(url).origin === baseUrl) return url;
+			if (decodedUrl.startsWith(baseUrl)) return decodedUrl;
+			if (decodedUrl.startsWith("/")) return `${baseUrl}${decodedUrl}`;
 			return baseUrl;
 		},
 
@@ -250,10 +282,22 @@ export const authOptions: NextAuthOptions = {
 					currentPeriodEnd: session.user.currentPeriodEnd,
 					subscriptionId: session.user.subscriptionId,
 					customerId: session.user.customerId,
+					hasInvitation: session.user.hasInvitation,
 				};
 			}
 
 			if (user) {
+				// Check for valid invitation
+				const invitation = await prisma.invitation.findFirst({
+					where: {
+						email: user.email || "",
+						OR: [
+							{ accepted: true },
+							{ expiresAt: { gt: new Date() } }
+						]
+					}
+				});
+
 				return {
 					...token,
 					id: user.id,
@@ -263,6 +307,7 @@ export const authOptions: NextAuthOptions = {
 					role: user.role,
 					picture: user.image,
 					image: user.image,
+					hasInvitation: !!invitation || user.role === "ADMIN",
 				};
 			}
 			return token;
@@ -280,6 +325,7 @@ export const authOptions: NextAuthOptions = {
 						subscriptionId: token.subscriptionId,
 						role: token.role,
 						image: token.picture || token.image,
+						hasInvitation: token.hasInvitation,
 					},
 				};
 			}

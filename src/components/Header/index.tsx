@@ -182,18 +182,12 @@ const Header = () => {
 						{session?.user ? (
 							<Account navbarOpen={navbarOpen} />
 						) : (
-							<div className="flex items-center space-x-2">
+							<div className="flex items-center">
 								<Link
 									href='/auth/signin'
-									className='px-4 py-2 font-satoshi text-base font-medium text-gray-600 hover:text-primary dark:text-gray-300'
-								>
-									Sign In
-								</Link>
-								<Link
-									href='/auth/signup'
 									className='rounded-lg bg-primary px-4 py-2 font-satoshi text-base font-medium text-white hover:bg-primary-dark'
-								>
-									Sign Up
+									>
+									Sign In
 								</Link>
 							</div>
 						)}
