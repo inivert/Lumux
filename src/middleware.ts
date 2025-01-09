@@ -1,6 +1,7 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+// Middleware function to handle both auth and root redirects
 export default withAuth(
 	async function middleware(req) {
 		const token = req.nextauth.token;
@@ -9,6 +10,12 @@ export default withAuth(
 		const isSignInPage = pathname === "/auth/signin";
 		const isCallbackPage = pathname.startsWith("/api/auth/callback");
 		const isVerifyRequestPage = pathname === "/auth/verify-request";
+		const isRootPage = pathname === "/";
+
+		// Handle root page - no need to rewrite, Next.js will handle the route group
+		if (isRootPage) {
+			return NextResponse.next();
+		}
 
 		// Allow access to auth-related pages without redirection
 		if (isCallbackPage || isVerifyRequestPage) {
@@ -38,10 +45,12 @@ export default withAuth(
 	{
 		callbacks: {
 			authorized: ({ token, req }) => {
-				// Allow access to auth-related pages without authorization
+				const { pathname } = req.nextUrl;
+				// Allow access to root and auth-related pages without authorization
 				if (
-					req.nextUrl.pathname.startsWith("/auth") ||
-					req.nextUrl.pathname.startsWith("/api/auth/callback")
+					pathname === "/" ||
+					pathname.startsWith("/auth") ||
+					pathname.startsWith("/api/auth/callback")
 				) {
 					return true;
 				}
@@ -53,6 +62,7 @@ export default withAuth(
 
 export const config = {
 	matcher: [
+		"/",
 		"/admin/:path*",
 		"/user/:path*",
 		"/auth/:path*",

@@ -2,7 +2,6 @@
 import { useState } from "react";
 import GoogleSigninButton from "../GoogleSigninButton";
 import SigninWithMagicLink from "../SigninWithMagicLink";
-import DemoSignin from "./DemoSignin";
 
 export default function Signin() {
 	return (
@@ -32,10 +31,6 @@ export default function Signin() {
 				<div className='mb-5'>
 					<SigninWithMagicLink />
 				</div>
-
-				<span className='my-10 block h-px w-full bg-stroke dark:bg-stroke-dark '></span>
-
-				<DemoSignin />
 			</div>
 		</>
 	);

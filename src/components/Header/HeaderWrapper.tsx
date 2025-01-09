@@ -2,7 +2,7 @@
 import Header from ".";
 import { usePathname } from "next/navigation";
 
-export const HeaderWrapper = () => {
+const HeaderWrapper = () => {
 	const pathname = usePathname();
 
 	return (
@@ -13,3 +13,5 @@ export const HeaderWrapper = () => {
 		</>
 	);
 };
+
+export default HeaderWrapper;

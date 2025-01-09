@@ -1,13 +1,24 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions, DefaultSession } from "next-auth";
 import { prisma } from "@/libs/prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import EmailProvider from "next-auth/providers/email";
+import GitHubProvider from "next-auth/providers/github";
 import { getServerSession } from "next-auth";
-import bcrypt from "bcrypt";
-import { User } from "@prisma/client";
 import crypto from "crypto";
+
+// @ts-ignore
+const bcryptjs = require("bcryptjs");
+
+interface User {
+	id: string;
+	email: string;
+	name?: string | null;
+	image?: string | null;
+	password?: string | null;
+	role?: string | null;
+}
 
 declare module "next-auth" {
 	interface Session extends DefaultSession {
@@ -34,13 +45,22 @@ export const authOptions: NextAuthOptions = {
 	session: {
 		strategy: "jwt",
 	},
-	pages: {
-		signIn: "/auth/signin",
-	},
 	providers: [
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID!,
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+			authorization: {
+				params: {
+					prompt: "consent",
+					access_type: "offline",
+					response_type: "code",
+					scope: "openid email profile"
+				}
+			}
+		}),
+		GitHubProvider({
+			clientId: process.env.GITHUB_CLIENT_ID!,
+			clientSecret: process.env.GITHUB_CLIENT_SECRET!,
 		}),
 		CredentialsProvider({
 			name: "credentials",
@@ -89,7 +109,7 @@ export const authOptions: NextAuthOptions = {
 						throw new Error("Please set up your password in settings");
 					}
 
-					const isPasswordValid = await compare(
+					const isPasswordValid = await bcryptjs.compare(
 						credentials.password,
 						user.password
 					);
@@ -101,26 +121,6 @@ export const authOptions: NextAuthOptions = {
 
 				return user;
 			},
-			from: process.env.EMAIL_FROM,
-			maxAge: 24 * 60 * 60, // 24 hours
-		}),
-
-		GitHubProvider({
-			clientId: process.env.GITHUB_CLIENT_ID || "",
-			clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-		}),
-
-		GoogleProvider({
-			clientId: process.env.GOOGLE_CLIENT_ID || "",
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-			authorization: {
-				params: {
-					prompt: "consent",
-					access_type: "offline",
-					response_type: "code",
-					scope: "openid email profile"
-				}
-			}
 		}),
 	],
 	callbacks: {
@@ -213,3 +213,5 @@ export const authOptions: NextAuthOptions = {
 		},
 	},
 };
+
+export const getAuthSession = () => getServerSession(authOptions);
