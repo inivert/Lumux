@@ -1,14 +1,15 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install --legacy-peer-deps",
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
     }
+  ],
+  "env": {
+    "PRISMA_GENERATE_DATAPROXY": "true"
   }
 } 
