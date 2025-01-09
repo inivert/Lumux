@@ -24,7 +24,7 @@ const Footer = () => {
 							href="/" 
 							className="inline-block mb-6 text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"
 						>
-							Your Name
+							Carlos Mejia
 						</Link>
 						<p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md">
 							Freelance web developer specializing in creating beautiful, performant, and accessible web applications.

@@ -10,6 +10,12 @@ import { getSignedURL } from "@/actions/upload";
 import Loader from "@/components/Common/Loader";
 import axios from "axios";
 
+// Secure default avatar from UI Avatars - a trusted service that generates avatars from initials
+const getDefaultAvatar = (name: string) => {
+	const encodedName = encodeURIComponent(name || 'User');
+	return `https://ui-avatars.com/api/?name=${encodedName}&background=0D8ABC&color=fff`;
+};
+
 export default function EditProfile() {
 	const { data: session, update } = useSession();
 	const [loading, setLoading] = useState(false);
@@ -91,7 +97,7 @@ export default function EditProfile() {
 						<Image
 							width={100}
 							height={100}
-							src={image || "/images/user/user-01.png"}
+							src={image || getDefaultAvatar(name)}
 							alt='profile'
 							className='h-25 w-25 rounded-full object-cover object-center'
 						/>
@@ -105,6 +111,7 @@ export default function EditProfile() {
 								id='profile'
 								className='sr-only'
 								onChange={handleImageUpload}
+								accept="image/*"
 							/>
 							{imageLoading ? (
 								<Loader style='border-primary' />

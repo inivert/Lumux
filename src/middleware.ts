@@ -11,6 +11,8 @@ export default withAuth(
 		const isCallbackPage = pathname.startsWith("/api/auth/callback");
 		const isVerifyRequestPage = pathname === "/auth/verify-request";
 		const isRootPage = pathname === "/";
+		const isAdminPath = pathname.startsWith("/admin");
+		const isUserPath = pathname.startsWith("/user");
 
 		// Handle root page - no need to rewrite, Next.js will handle the route group
 		if (isRootPage) {
@@ -27,6 +29,11 @@ export default withAuth(
 			return NextResponse.redirect(new URL("/auth/signin", req.url));
 		}
 
+		// If user has no role, redirect to signin with error
+		if (token && !token.role) {
+			return NextResponse.redirect(new URL("/auth/signin?error=NoRole", req.url));
+		}
+
 		// If user is logged in and trying to access auth pages
 		if (token && isAuthPage) {
 			// Don't redirect if it's a sign-in page with a callback URL
@@ -34,10 +41,35 @@ export default withAuth(
 				return NextResponse.next();
 			}
 
-			if (token.role === "ADMIN") {
+			const userRole = token.role?.toLowerCase();
+			
+			if (userRole === "admin") {
 				return NextResponse.redirect(new URL("/admin", req.url));
 			}
 			return NextResponse.redirect(new URL("/user", req.url));
+		}
+
+		// Role-based access control
+		if (token) {
+			const userRole = token.role?.toLowerCase();
+
+			// Prevent access to admin routes for non-admin users
+			if (isAdminPath && userRole !== "admin") {
+				return NextResponse.redirect(new URL("/user", req.url));
+			}
+
+			// Prevent access to user routes for admin users
+			if (isUserPath && userRole === "admin") {
+				return NextResponse.redirect(new URL("/admin", req.url));
+			}
+
+			// Ensure users are in their correct areas when accessing root
+			if (isRootPage) {
+				if (userRole === "admin") {
+					return NextResponse.redirect(new URL("/admin", req.url));
+				}
+				return NextResponse.redirect(new URL("/user", req.url));
+			}
 		}
 
 		return NextResponse.next();

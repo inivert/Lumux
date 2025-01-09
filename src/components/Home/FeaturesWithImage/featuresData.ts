@@ -2,25 +2,25 @@ import { FeatureWithImg } from "@/types/featureWithImg";
 
 const featureItemData: FeatureWithImg[] = [
 	{
-		title: "Build, Launch, Scale with CodeLumus",
+		title: "Professional Web Development by CodeLumus",
 		description:
-			"Lorem ipsum dolor sit amet, consectetur adipiscing elit praesent condimentum malesuada consequat quam.",
+			"As an experienced independent developer, I build modern, high-performance web applications tailored to your specific business requirements.",
 		checklist: [
-			"Lorem ipsum dolor sit amet, consectetur.",
-			"malesuada consequat quam.",
-			"Nam posuere enim nec ante venenatis, et ullam",
+			"Custom authentication and user systems",
+			"Secure payment integration setup",
+			"Professional deployment and maintenance",
 		],
 		image: "/images/features/features-01.svg",
 		id: 1,
 	},
 	{
-		title: "The Best Website Management Service Available",
+		title: "Complete Website Management Solution",
 		description:
-			"Lorem ipsum dolor sit amet, consectetur adipiscing elit praesent condimentum malesuada consequat quam.",
+			"I personally handle every aspect of your website's operation, from hosting to maintenance, allowing you to focus entirely on your business.",
 		checklist: [
-			"Lorem ipsum dolor sit amet, consectetur.",
-			"malesuada consequat quam.",
-			"Nam posuere enim nec ante venenatis, et ullam",
+			"24/7 monitoring and maintenance",
+			"Regular security updates and backups",
+			"Direct, personalized support",
 		],
 		image: "/images/features/features-02.svg",
 		id: 2,

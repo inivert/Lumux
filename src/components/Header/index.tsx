@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Dropdown from "./Dropdown";
 import ThemeSwitcher from "./ThemeSwitcher";
-import { menuData } from "./menuData";
+import { getMenuData } from "./menuData";
 import Account from "./Account";
 import { useSession } from "next-auth/react";
 import { onScroll } from "@/libs/scrollActive";
@@ -16,9 +16,15 @@ import Logo from "../Common/Logo";
 
 const Header = () => {
 	const [stickyMenu, setStickyMenu] = useState(false);
-	const { data: session } = useSession();
-
+	const { data: session, status } = useSession();
+	const menuData = getMenuData(session?.user?.role);
 	const pathUrl = usePathname();
+	const isDashboard = pathUrl?.startsWith('/dashboard');
+
+	// Don't render header at all in dashboard
+	if (isDashboard) {
+		return null;
+	}
 
 	const handleStickyMenu = () => {
 		if (window.scrollY > 0) {
@@ -59,6 +65,11 @@ const Header = () => {
 			window.removeEventListener("scroll", handleStickyMenu);
 		};
 	}, []);
+
+	// Don't show loading state in dashboard
+	if (status === "loading" && isDashboard) {
+		return null;
+	}
 
 	return (
 		<>

@@ -3,11 +3,27 @@
 const nextConfig = {
 	reactStrictMode: true,
 	images: {
-		domains: [
-			"avatars.githubusercontent.com",
-			"lh3.googleusercontent.com",
-			"res.cloudinary.com",
-			"utfs.io",
+		remotePatterns: [
+			{
+				protocol: 'https',
+				hostname: 'avatars.githubusercontent.com',
+			},
+			{
+				protocol: 'https',
+				hostname: 'lh3.googleusercontent.com',
+			},
+			{
+				protocol: 'https',
+				hostname: 'res.cloudinary.com',
+			},
+			{
+				protocol: 'https',
+				hostname: 'utfs.io',
+			},
+			{
+				protocol: 'https',
+				hostname: 'ui-avatars.com',
+			},
 		],
 	},
 	webpack: (config, { isServer }) => {

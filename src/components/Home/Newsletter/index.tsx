@@ -43,11 +43,10 @@ export default function Newsletter() {
 				<div className='mx-auto w-full max-w-[590px]'>
 					<div className='text-center'>
 						<h2 className='mb-5 font-satoshi text-3xl font-bold text-dark dark:text-white sm:text-4xl md:text-heading-2'>
-							Subscribe Newsletter
+							Stay Connected with CodeLumus
 						</h2>
 						<p className='mb-10 text-base text-body dark:text-gray-4'>
-							Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent
-							condimentum dictum euismod malesuada lacus, non consequat quam.
+							Subscribe to receive updates about my latest projects, development insights, and exclusive offers for personalized website development and maintenance services.
 						</p>
 					</div>
 
