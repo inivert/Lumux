@@ -16,7 +16,7 @@ interface UserData {
 }
 
 interface EditProfileProps {
-	initialData: UserData;
+	initialData?: UserData;
 }
 
 // Generate avatar from initials using our API
@@ -25,13 +25,13 @@ const getDefaultAvatar = (name: string) => {
 	return `/api/avatar?name=${encodedName}`;
 };
 
-export default function EditProfile({ initialData }: EditProfileProps) {
+export default function EditProfile({ initialData = { name: null, email: null, websiteName: null } }: EditProfileProps) {
 	const { data: session, update } = useSession();
 	const router = useRouter();
 	const [loading, setLoading] = useState(false);
 	const [data, setData] = useState({
-		name: initialData.name || "",
-		websiteName: initialData.websiteName || "",
+		name: initialData?.name || session?.user?.name || "",
+		websiteName: initialData?.websiteName || "",
 	});
 
 	const { name, websiteName } = data;
@@ -39,15 +39,15 @@ export default function EditProfile({ initialData }: EditProfileProps) {
 	// Update local state when initialData changes
 	useEffect(() => {
 		setData({
-			name: initialData.name || "",
-			websiteName: initialData.websiteName || "",
+			name: initialData?.name || session?.user?.name || "",
+			websiteName: initialData?.websiteName || "",
 		});
-	}, [initialData]);
+	}, [initialData, session?.user?.name]);
 
 	// Periodically refresh the page to get latest data
 	useEffect(() => {
 		const interval = setInterval(() => {
-			router.refresh();
+				router.refresh();
 		}, 30000); // Refresh every 30 seconds
 
 		return () => clearInterval(interval);
