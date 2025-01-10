@@ -1,135 +1,51 @@
-import { NextResponse } from "next/server";
-import Stripe from "stripe";
-import { prisma } from "@/libs/prisma";
-
-// Add more detailed logging for debugging
-console.log("[Payment Route] Environment check:", {
-  hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
-  keyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7),
-});
-
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing STRIPE_SECRET_KEY');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY.trim(), {
-  apiVersion: "2023-10-16",
-});
+import { NextResponse } from 'next/server';
+import { getAuthSession } from '@/libs/auth';
+import { stripe } from '@/libs/stripe';
+import { CartItem } from '@/types/product';
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { userId, priceId } = body;
-
-    console.log("[Payment Route] Request received:", { userId, priceId });
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing user ID" },
-        { status: 400 }
-      );
-    }
-
-    // Find user
-    let existingUser;
     try {
-      existingUser = await prisma.user.findUnique({
-        where: { id: userId },
-      });
+        const session = await getAuthSession();
+        
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
 
-      console.log("[Payment Route] User found:", {
-        email: existingUser?.email,
-        hasSubscription: !!existingUser?.subscriptionId,
-      });
+        const body = await req.json();
+        const { items } = body as { items: CartItem[] };
+
+        if (!items?.length) {
+            return NextResponse.json(
+                { error: 'No items in cart' },
+                { status: 400 }
+            );
+        }
+
+        // Create Stripe checkout session
+        const stripeSession = await stripe.checkout.sessions.create({
+            customer_email: session.user.email || undefined,
+            mode: 'subscription',
+            payment_method_types: ['card'],
+            line_items: items.map((item) => ({
+                price: item.priceId,
+                quantity: 1,
+            })),
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/products?canceled=true`,
+            metadata: {
+                userId: session.user.id,
+            },
+        });
+
+        return NextResponse.json({ url: stripeSession.url });
     } catch (error) {
-      console.error("[Payment Route] Database error:", error);
-      return NextResponse.json(
-        { error: "Database error", details: "Failed to fetch user data" },
-        { status: 500 }
-      );
-    }
-
-    if (!existingUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    if (!existingUser.email) {
-      return NextResponse.json(
-        { error: "User email required" },
-        { status: 400 }
-      );
-    }
-
-    try {
-      let customerId = existingUser.customerId;
-      
-      // If user doesn't have a Stripe customer ID, create one
-      if (!customerId) {
-        console.log("[Payment Route] Creating new Stripe customer");
-        const customer = await stripe.customers.create({
-          email: existingUser.email,
-          metadata: { userId },
-        });
-
-        customerId = customer.id;
-
-        // Update user with customer ID
-        await prisma.user.update({
-          where: { id: userId },
-          data: { customerId: customer.id },
-        });
-      }
-
-      // Create checkout session for new subscription
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        mode: 'subscription',
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        success_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing?success=true`,
-        cancel_url: `${process.env.SITE_URL || 'http://localhost:3000'}/user/billing?success=false`,
-        subscription_data: {
-          metadata: {
-            userId,
-          },
-        },
-      });
-
-      console.log("[Payment Route] Checkout session created:", session.id);
-      return NextResponse.json({ url: session.url });
-    } catch (error: any) {
-      console.error("[Payment Route] Stripe error:", {
-        type: error.type,
-        message: error.message,
-        code: error.code,
-      });
-
-      // Handle specific Stripe errors
-      if (error.type === 'StripeInvalidRequestError') {
+        console.error('Error creating checkout session:', error);
         return NextResponse.json(
-          { error: "Invalid request to Stripe", details: error.message },
-          { status: 400 }
+            { error: 'Failed to create checkout session' },
+            { status: 500 }
         );
-      }
-
-      return NextResponse.json(
-        { error: "Payment processing error", details: error.message },
-        { status: 500 }
-      );
     }
-  } catch (error: any) {
-    console.error("[Payment Route] Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Server error", details: error.message },
-      { status: 500 }
-    );
-  }
 } 

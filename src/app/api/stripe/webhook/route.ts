@@ -1,130 +1,164 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import Stripe from "stripe";
-import { prisma } from "@/libs/prisma";
+import { stripe } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
+import { CartItem } from "@/types/product";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY");
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+async function handleSubscriptionCreated(subscription: any) {
+    const metadata = subscription.metadata;
+    if (!metadata?.userId || !metadata?.items) {
+        console.error('Missing metadata in subscription:', subscription.id);
+        return;
+    }
+
+    const items = JSON.parse(metadata.items) as CartItem[];
+    const mainPlan = items.find(item => !item.isAddon);
+    const addons = items.filter(item => item.isAddon);
+
+    // Update user's products in the database
+    await prisma.user.update({
+        where: { id: metadata.userId },
+        data: {
+            products: {
+                upsert: {
+                    create: {
+                        mainPlan: mainPlan ? {
+                            productId: mainPlan.productId,
+                            priceId: mainPlan.priceId,
+                            isYearly: mainPlan.isYearly,
+                            status: 'active'
+                        } : undefined,
+                        addons: addons.map(addon => ({
+                            productId: addon.productId,
+                            priceId: addon.priceId,
+                            isYearly: addon.isYearly,
+                            status: 'active'
+                        }))
+                    },
+                    update: {
+                        mainPlan: mainPlan ? {
+                            productId: mainPlan.productId,
+                            priceId: mainPlan.priceId,
+                            isYearly: mainPlan.isYearly,
+                            status: 'active'
+                        } : undefined,
+                        addons: {
+                            push: addons.map(addon => ({
+                                productId: addon.productId,
+                                priceId: addon.priceId,
+                                isYearly: addon.isYearly,
+                                status: 'active'
+                            }))
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
-if (!process.env.STRIPE_WEBHOOK_SECRET) {
-  throw new Error("Missing STRIPE_WEBHOOK_SECRET");
+async function handleSubscriptionUpdated(subscription: any) {
+    // Handle subscription updates (e.g., plan changes, cancellations)
+    const metadata = subscription.metadata;
+    if (!metadata?.userId) {
+        console.error('Missing userId in subscription:', subscription.id);
+        return;
+    }
+
+    // Update subscription status based on the event
+    const status = subscription.status === 'active' ? 'active' : 'inactive';
+
+    await prisma.user.update({
+        where: { id: metadata.userId },
+        data: {
+            products: {
+                update: {
+                    mainPlan: {
+                        status
+                    },
+                    addons: {
+                        updateMany: {
+                            where: {},
+                            data: { status }
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
+async function handleSubscriptionDeleted(subscription: any) {
+    const metadata = subscription.metadata;
+    if (!metadata?.userId) {
+        console.error('Missing userId in subscription:', subscription.id);
+        return;
+    }
+
+    // Mark all products as cancelled
+    await prisma.user.update({
+        where: { id: metadata.userId },
+        data: {
+            products: {
+                update: {
+                    mainPlan: {
+                        status: 'cancelled'
+                    },
+                    addons: {
+                        updateMany: {
+                            where: {},
+                            data: { status: 'cancelled' }
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
 
 export async function POST(req: Request) {
-  const body = await req.text();
-  const headersList = await headers();
-  const signature = headersList.get("Stripe-Signature");
+    const body = await req.text();
+    const signature = headers().get('stripe-signature')!;
 
-  if (!signature) {
-    return new NextResponse("No signature found", { status: 400 });
-  }
+    let event;
 
-  let event: Stripe.Event;
-
-  try {
-    if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      return new NextResponse("Webhook secret is not set", { status: 500 });
-    }
-    
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (error) {
-    console.error("Error verifying webhook signature:", error);
-    return new NextResponse("Webhook signature verification failed", {
-      status: 400,
-    });
-  }
-
-  try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        if (!session?.metadata?.userId) {
-          return new NextResponse("User id is required", { status: 400 });
-        }
-
-        const subscription = await stripe.subscriptions.retrieve(
-          session.subscription as string
+    try {
+        event = stripe.webhooks.constructEvent(
+            body,
+            signature,
+            webhookSecret
         );
-
-        // Check if subscription already exists
-        const existingSubscription = await prisma.subscription.findUnique({
-          where: { userId: session.metadata.userId },
-        });
-
-        if (existingSubscription) {
-          // Update existing subscription
-          await prisma.subscription.update({
-            where: { userId: session.metadata.userId },
-            data: {
-              stripeSubscriptionId: subscription.id,
-              stripeCustomerId: subscription.customer as string,
-              stripePriceId: subscription.items.data[0].price.id,
-              stripeCurrentPeriodEnd: new Date(
-                subscription.current_period_end * 1000
-              ),
-            },
-          });
-        } else {
-          // Create new subscription
-          await prisma.subscription.create({
-            data: {
-              userId: session.metadata.userId,
-              stripeSubscriptionId: subscription.id,
-              stripeCustomerId: subscription.customer as string,
-              stripePriceId: subscription.items.data[0].price.id,
-              stripeCurrentPeriodEnd: new Date(
-                subscription.current_period_end * 1000
-              ),
-            },
-          });
-        }
-        break;
-      }
-
-      case "invoice.payment_succeeded": {
-        const subscription = await stripe.subscriptions.retrieve(
-          event.data.object.subscription as string
+    } catch (error: any) {
+        console.error('Webhook signature verification failed:', error.message);
+        return NextResponse.json(
+            { message: 'Webhook signature verification failed' },
+            { status: 400 }
         );
-
-        await prisma.subscription.update({
-          where: {
-            stripeSubscriptionId: subscription.id,
-          },
-          data: {
-            stripePriceId: subscription.items.data[0].price.id,
-            stripeCurrentPeriodEnd: new Date(
-              subscription.current_period_end * 1000
-            ),
-          },
-        });
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        
-        await prisma.subscription.delete({
-          where: {
-            stripeSubscriptionId: subscription.id,
-          },
-        });
-        break;
-      }
     }
 
-    return new NextResponse(null, { status: 200 });
-  } catch (error) {
-    console.error("Error processing webhook:", error);
-    return new NextResponse("Webhook handler failed", { status: 500 });
-  }
+    try {
+        switch (event.type) {
+            case 'customer.subscription.created':
+                await handleSubscriptionCreated(event.data.object);
+                break;
+            case 'customer.subscription.updated':
+                await handleSubscriptionUpdated(event.data.object);
+                break;
+            case 'customer.subscription.deleted':
+                await handleSubscriptionDeleted(event.data.object);
+                break;
+            default:
+                console.log('Unhandled event type:', event.type);
+        }
+
+        return NextResponse.json({ received: true });
+    } catch (error) {
+        console.error('Webhook handler failed:', error);
+        return NextResponse.json(
+            { message: 'Webhook handler failed' },
+            { status: 500 }
+        );
+    }
 } 
