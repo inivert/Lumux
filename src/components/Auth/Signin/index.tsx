@@ -2,36 +2,57 @@
 import { useState } from "react";
 import GoogleSigninButton from "../GoogleSigninButton";
 import SigninWithMagicLink from "../SigninWithMagicLink";
+import { motion } from "framer-motion";
 
 export default function Signin() {
+	const [activeTab, setActiveTab] = useState<'magic-link' | 'password'>('magic-link');
+
 	return (
-		<>
-			<div className='mx-auto w-full max-w-[400px] px-4 py-10'>
-				<div className='text-center mb-7.5'>
-					<h3 className='mb-4 font-satoshi text-heading-5 font-bold text-dark dark:text-white'>
-						Sign In
-					</h3>
-					<p className='text-base dark:text-gray-5'>
-						Access is invitation only. Please use your invited email address.
-					</p>
-				</div>
+		<div className="w-full px-6 sm:px-8 py-8 sm:py-10">
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.5 }}
+				className="text-center mb-8"
+			>
+				<h3 className="mb-3 text-2xl font-bold text-white">
+					Welcome Back
+				</h3>
+				<p className="text-base text-gray-300">
+					Access is invitation only. Please use your invited email address.
+				</p>
+			</motion.div>
 
-				<div className='space-y-3 pb-7.5'>
-					<GoogleSigninButton text='Sign in' />
-				</div>
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.5, delay: 0.1 }}
+				className="space-y-4"
+			>
+				<GoogleSigninButton text="Continue with Google" />
+			</motion.div>
 
-				<div className='mb-7.5 flex items-center justify-center'>
-					<span className='block h-px w-full bg-stroke dark:bg-stroke-dark'></span>
-					<div className='inline-block bg-white px-3 text-base text-body dark:bg-[#151F34] dark:text-gray-5'>
-						OR
-					</div>
-					<span className='block h-px w-full bg-stroke dark:bg-stroke-dark'></span>
+			<motion.div
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 0.5, delay: 0.2 }}
+				className="my-8 flex items-center justify-center gap-4"
+			>
+				<span className="block h-px flex-1 bg-gray-700/50" />
+				<div className="text-sm font-medium text-gray-300">
+					or continue with email
 				</div>
+				<span className="block h-px flex-1 bg-gray-700/50" />
+			</motion.div>
 
-				<div className='mb-5'>
-					<SigninWithMagicLink />
-				</div>
-			</div>
-		</>
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.5, delay: 0.3 }}
+				className="mb-5"
+			>
+				<SigninWithMagicLink />
+			</motion.div>
+		</div>
 	);
 }
