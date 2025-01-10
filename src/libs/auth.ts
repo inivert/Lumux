@@ -86,15 +86,7 @@ export const authOptions: NextAuthOptions = {
 	},
 	providers: [
 		EmailProvider({
-			server: {
-				host: "smtp.resend.com",
-				port: 465,
-				auth: {
-					user: "resend",
-					pass: process.env.RESEND_API_KEY
-				},
-				secure: true,
-			},
+			server: process.env.RESEND_API_KEY,
 			from: process.env.EMAIL_FROM,
 			sendVerificationRequest: async ({ identifier, url, provider }) => {
 				const { host } = new URL(url);
@@ -126,14 +118,6 @@ export const authOptions: NextAuthOptions = {
 		GoogleProvider({
 			clientId: process.env.GOOGLE_CLIENT_ID!,
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-			authorization: {
-				params: {
-					prompt: "consent",
-					access_type: "offline",
-					response_type: "code",
-					scope: "openid email profile"
-				}
-			}
 		}),
 		GitHubProvider({
 			clientId: process.env.GITHUB_CLIENT_ID!,
@@ -202,46 +186,30 @@ export const authOptions: NextAuthOptions = {
 	],
 	callbacks: {
 		async signIn({ user, account, profile, email, credentials }) {
-			const userEmail = user.email?.toLowerCase();
-			
-			// Always allow admin email regardless of provider
-			if (userEmail === PROTECTED_ADMIN_EMAIL) {
-				// If signing in with OAuth, link the account
-				if (account && account.provider !== 'email') {
-					const existingUser = await prisma.user.findUnique({
-						where: { email: userEmail },
-						include: { accounts: true }
-					});
-
-					if (existingUser) {
-						// Link this OAuth account to the existing user
-						await prisma.account.create({
-							data: {
-								userId: existingUser.id,
-								type: account.type,
-								provider: account.provider,
-								providerAccountId: account.providerAccountId,
-								access_token: account.access_token,
-								expires_at: account.expires_at,
-								token_type: account.token_type,
-								scope: account.scope,
-								id_token: account.id_token,
-								session_state: account.session_state,
-							},
-						});
-					}
-				}
+			// Always allow Google sign-in
+			if (account?.provider === 'google') {
 				return true;
 			}
 
-			// For non-admin users, check if user exists
-			if (!userEmail) return false;
+			const userEmail = user.email?.toLowerCase();
+			
+			// Always allow admin email
+			if (userEmail === PROTECTED_ADMIN_EMAIL) {
+				return true;
+			}
 
-			const existingUser = await prisma.user.findUnique({
-				where: { email: userEmail }
-			});
+			// For credentials provider, check invitation
+			if (account?.provider === 'credentials') {
+				if (!userEmail) return false;
+				
+				const invitation = await prisma.invitation.findFirst({
+					where: { email: userEmail }
+				});
 
-			return !!existingUser;
+				return !!invitation;
+			}
+
+			return true;
 		},
 
 		async jwt({ token, user, account, profile, trigger, session }) {
