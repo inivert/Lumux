@@ -63,6 +63,7 @@
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
+    "@svgr/webpack": "^8.1.0",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

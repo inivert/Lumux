@@ -2,30 +2,56 @@
 import Card from "@/components/Common/Dashboard/Card";
 import FormButton from "@/components/Common/Dashboard/FormButton";
 import InputGroup from "@/components/Common/Dashboard/InputGroup";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { getSignedURL } from "@/actions/upload";
-import Loader from "@/components/Common/Loader";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
-// Secure default avatar from UI Avatars - a trusted service that generates avatars from initials
+interface UserData {
+	name: string | null;
+	email: string | null;
+	websiteName: string | null;
+}
+
+interface EditProfileProps {
+	initialData: UserData;
+}
+
+// Generate avatar from initials using our API
 const getDefaultAvatar = (name: string) => {
 	const encodedName = encodeURIComponent(name || 'User');
-	return `https://ui-avatars.com/api/?name=${encodedName}&background=0D8ABC&color=fff`;
+	return `/api/avatar?name=${encodedName}`;
 };
 
-export default function EditProfile() {
+export default function EditProfile({ initialData }: EditProfileProps) {
 	const { data: session, update } = useSession();
+	const router = useRouter();
 	const [loading, setLoading] = useState(false);
-	const [imageLoading, setImageLoading] = useState(false);
 	const [data, setData] = useState({
-		name: session?.user?.name || "",
-		image: session?.user?.image || "",
+		name: initialData.name || "",
+		websiteName: initialData.websiteName || "",
 	});
 
-	const { name, image } = data;
+	const { name, websiteName } = data;
+
+	// Update local state when initialData changes
+	useEffect(() => {
+		setData({
+			name: initialData.name || "",
+			websiteName: initialData.websiteName || "",
+		});
+	}, [initialData]);
+
+	// Periodically refresh the page to get latest data
+	useEffect(() => {
+		const interval = setInterval(() => {
+			router.refresh();
+		}, 30000); // Refresh every 30 seconds
+
+		return () => clearInterval(interval);
+	}, [router]);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setData({
@@ -41,121 +67,89 @@ export default function EditProfile() {
 		try {
 			const res = await axios.patch("/api/user", {
 				name,
+				websiteName,
 			});
 
 			if (res.status === 200) {
+				await update(); // Update the session
+				router.refresh(); // Refresh the page to update all components
 				toast.success("Profile updated successfully");
-				update();
 			}
 		} catch (error: any) {
-			toast.error(error.response.data);
+			toast.error(error.response?.data || "Failed to update profile");
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-
-		if (!file.type.includes("image")) {
-			toast.error("Please upload an image file");
-			return;
-		}
-
-		try {
-			setImageLoading(true);
-			const { url } = await getSignedURL(file);
-
-			const res = await axios.patch("/api/user", {
-				image: url,
-			});
-
-			if (res.status === 200) {
-				toast.success("Profile image updated successfully");
-				update();
-				setData({
-					...data,
-					image: url,
-				});
-			}
-		} catch (error: any) {
-			toast.error(error.response.data);
-		} finally {
-			setImageLoading(false);
-		}
-	};
-
 	return (
-		<Card title='Edit Profile'>
-			<form onSubmit={handleSubmit}>
-				<div className='mb-5'>
-					<label className='mb-2.5 block font-medium text-dark dark:text-white'>
-						Profile Photo
-					</label>
-					<div className='relative h-25 w-25'>
-						<Image
-							width={100}
-							height={100}
-							src={image || getDefaultAvatar(name)}
-							alt='profile'
-							className='h-25 w-25 rounded-full object-cover object-center'
-						/>
-						<label
-							htmlFor='profile'
-							className='absolute bottom-0 right-0 flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-full border border-stroke bg-white hover:bg-opacity-90 dark:border-strokedark dark:bg-boxdark'
-						>
-							<input
-								type='file'
-								name='profile'
-								id='profile'
-								className='sr-only'
-								onChange={handleImageUpload}
-								accept="image/*"
+		<Card>
+			<form onSubmit={handleSubmit} className="space-y-8">
+				<div className='relative'>
+					<div className='relative mx-auto h-[120px] w-[120px] group'>
+						<div className='absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full animate-pulse' />
+						<div className='relative h-full w-full overflow-hidden rounded-full border-4 border-white dark:border-gray-700 shadow-lg transition-transform duration-300 group-hover:scale-105'>
+							<Image
+								src={getDefaultAvatar(name)}
+								alt={name || "profile"}
+								fill
+								className='object-cover'
+								unoptimized
+									priority
 							/>
-							{imageLoading ? (
-								<Loader style='border-primary' />
-							) : (
-								<svg
-									className='fill-current duration-300 ease-in-out'
-									width='14'
-									height='14'
-									viewBox='0 0 14 14'
-									fill='none'
-									xmlns='http://www.w3.org/2000/svg'
-								>
-									<path
-										fillRule='evenodd'
-										clipRule='evenodd'
-										d='M4.76464 1.42638C4.87283 1.2641 5.05496 1.16663 5.25 1.16663H8.75C8.94504 1.16663 9.12717 1.2641 9.23536 1.42638L10.2289 2.91663H12.25C12.7141 2.91663 13.1592 3.101 13.4874 3.42919C13.8156 3.75738 14 4.2025 14 4.66663V11.0833C14 11.5474 13.8156 11.9925 13.4874 12.3207C13.1592 12.6489 12.7141 12.8333 12.25 12.8333H1.75C1.28587 12.8333 0.840752 12.6489 0.512563 12.3207C0.184375 11.9925 0 11.5474 0 11.0833V4.66663C0 4.2025 0.184374 3.75738 0.512563 3.42919C0.840752 3.101 1.28587 2.91663 1.75 2.91663H3.77114L4.76464 1.42638ZM5.56219 2.33329L4.5687 3.82353C4.46051 3.98582 4.27837 4.08329 4.08333 4.08329H1.75C1.59529 4.08329 1.44692 4.14475 1.33752 4.25415C1.22812 4.36354 1.16667 4.51192 1.16667 4.66663V11.0833C1.16667 11.238 1.22812 11.3864 1.33752 11.4958C1.44692 11.6052 1.59529 11.6666 1.75 11.6666H12.25C12.4047 11.6666 12.5531 11.6052 12.6625 11.4958C12.7719 11.3864 12.8333 11.238 12.8333 11.0833V4.66663C12.8333 4.51192 12.7719 4.36354 12.6625 4.25415C12.5531 4.14475 12.4047 4.08329 12.25 4.08329H9.91667C9.72163 4.08329 9.53949 3.98582 9.4313 3.82353L8.43781 2.33329H5.56219Z'
-										fill=''
-									/>
-									<path
-										fillRule='evenodd'
-										clipRule='evenodd'
-										d='M7.00004 5.83329C6.03354 5.83329 5.25004 6.61679 5.25004 7.58329C5.25004 8.54979 6.03354 9.33329 7.00004 9.33329C7.96654 9.33329 8.75004 8.54979 8.75004 7.58329C8.75004 6.61679 7.96654 5.83329 7.00004 5.83329ZM4.08337 7.58329C4.08337 5.97246 5.38921 4.66663 7.00004 4.66663C8.61087 4.66663 9.91671 5.97246 9.91671 7.58329C9.91671 9.19412 8.61087 10.5 7.00004 10.5C5.38921 10.5 4.08337 9.19412 4.08337 7.58329Z'
-										fill=''
-									/>
-								</svg>
-							)}
-						</label>
+						</div>
+					
 					</div>
 				</div>
 
-				<div className='mb-5'>
-					<InputGroup
-						label='Full Name'
-						name='name'
-						type='text'
-						placeholder='Enter your full name'
-						value={name}
-						handleChange={handleChange}
-					/>
+				<div className='space-y-6'>
+					<div className='relative'>
+						<InputGroup
+							label='Full Name'
+							name='name'
+							type='text'
+							placeholder='Enter your full name'
+							value={name}
+							handleChange={handleChange}
+							className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
+						/>
+						<div className="absolute right-3 top-[38px] text-gray-400">
+							<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M20 4H4C2.89543 4 2 4.89543 2 6V18C2 19.1046 2.89543 20 4 20H20C21.1046 20 22 19.1046 22 18V6C22 4.89543 21.1046 4 20 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M8 2V4M16 2V4M4 8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							</svg>
+						</div>
+					</div>
+
+					<div className='relative'>
+						<InputGroup
+							label='Website Name'
+							name='websiteName'
+							type='text'
+							placeholder='Enter your website name'
+							value={websiteName}
+							handleChange={handleChange}
+							className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
+						/>
+						<div className="absolute right-3 top-[38px] text-gray-400">
+							<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M12 3C14.5013 5.46452 15.9228 8.66283 16 12C15.9228 15.3372 14.5013 18.5355 12 21C9.49872 18.5355 8.07725 15.3372 8 12C8.07725 8.66283 9.49872 5.46452 12 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							</svg>
+						</div>
+					</div>
 				</div>
 
-				<FormButton>
-					Save {loading && <Loader style='border-white dark:border-dark' />}
-				</FormButton>
+				<div className="flex justify-end pt-4">
+					<FormButton
+						loading={loading}
+						text="Save Changes"
+						disabled={!name && !websiteName}
+						className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+					/>
+				</div>
 			</form>
 		</Card>
 	);

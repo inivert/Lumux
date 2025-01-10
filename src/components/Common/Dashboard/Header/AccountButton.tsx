@@ -1,21 +1,24 @@
 /* eslint-disable @next/next/no-img-element */
 import AccountMenu from "../../AccountMenu";
+import Image from "next/image";
 
 export default function AccountButton({ user }: any) {
-	const profilePic = user?.image
-		? user.image.includes("http")
-			? user.image
-			: `${process.env.NEXT_PUBLIC_IMAGE_URL}/${user.image}`
-		: "/images/dashboard/profile-avatar.png";
+	const avatarUrl = `/api/avatar?name=${encodeURIComponent(user?.name || 'User')}&size=48`;
 
 	return (
 		<div className='group relative flex items-center'>
 			<div className='flex items-center gap-4'>
-				<img
-					src={profilePic}
-					alt='profile name'
-					className='h-[48px] w-[48px] overflow-hidden rounded-full'
-				/>
+				<div className="relative h-[48px] w-[48px] overflow-hidden rounded-full">
+					<Image
+						src={avatarUrl}
+						alt={user?.name || "profile"}
+						fill
+						className='object-cover'
+						sizes="48px"
+						unoptimized
+						priority
+					/>
+				</div>
 				<p className='font-satoshi text-base font-medium capitalize text-dark dark:text-white'>
 					{user?.name}
 				</p>

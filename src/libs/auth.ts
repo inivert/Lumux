@@ -57,6 +57,7 @@ interface User {
 	image?: string | null;
 	password?: string | null;
 	role?: UserRole | null;
+	websiteName?: string | null;
 }
 
 declare module "next-auth" {
@@ -64,12 +65,14 @@ declare module "next-auth" {
 		user: User & DefaultSession["user"] & {
 			hasInvitation?: boolean;
 			role?: string;
+			websiteName?: string | null;
 		};
 	}
 
 	interface JWT {
 		hasInvitation?: boolean;
 		role?: string;
+		websiteName?: string | null;
 	}
 }
 
@@ -229,6 +232,7 @@ export const authOptions: NextAuthOptions = {
 					email: dbUser.email,
 					name: dbUser.name,
 					picture: dbUser.image,
+					websiteName: dbUser.websiteName,
 				};
 			}
 			return token;
@@ -242,6 +246,7 @@ export const authOptions: NextAuthOptions = {
 						...session.user,
 						id: token.id,
 						role: token.role,
+						websiteName: token.websiteName,
 					},
 				};
 			}
