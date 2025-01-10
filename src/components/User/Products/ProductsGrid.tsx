@@ -215,6 +215,12 @@ const ProductsGrid = () => {
                 }
             } else if (error.response?.status === 404) {
                 toast.error('User profile not found. Please try signing out and back in.');
+            } else if (errorCode === 'STRIPE_CONFIG_ERROR') {
+                toast.error('Payment service is not properly configured. Please contact support.');
+            } else if (errorCode === 'STRIPE_AUTH_ERROR') {
+                toast.error('Payment service authentication failed. Please contact support.');
+            } else if (errorCode === 'STRIPE_CONNECTION_ERROR') {
+                toast.error('Unable to connect to payment service. Please try again later.');
             } else if (errorCode === 'STRIPE_ERROR') {
                 toast.error('Payment service is temporarily unavailable. Please try again later.');
             } else if (errorCode === 'DATABASE_ERROR') {

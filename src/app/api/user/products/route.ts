@@ -63,11 +63,11 @@ export async function GET() {
             );
         }
 
+        // If user has no customer ID, return empty products array
         const customerId = user.customerId || user.subscription?.stripeCustomerId;
         console.log('Customer ID:', { exists: !!customerId });
 
         if (!customerId) {
-            // If user has no customer ID, they have no products
             return NextResponse.json(
                 { products: [] },
                 {
@@ -76,6 +76,18 @@ export async function GET() {
                         'Cache-Control': 'no-store, max-age=0',
                     }
                 }
+            );
+        }
+
+        // Check if Stripe is properly initialized
+        if (!process.env.STRIPE_SECRET_KEY) {
+            console.error('Stripe secret key not found');
+            return NextResponse.json(
+                { 
+                    error: 'Payment service configuration error',
+                    code: 'STRIPE_CONFIG_ERROR'
+                },
+                { status: 503 }
             );
         }
 
@@ -91,8 +103,7 @@ export async function GET() {
                 }),
                 stripe.charges.list({
                     customer: customerId,
-                    limit: 100,
-                    expand: ['data.metadata']
+                    limit: 100
                 })
             ]);
             console.log('Stripe data fetched:', {
@@ -101,6 +112,28 @@ export async function GET() {
             });
         } catch (error: any) {
             console.error('Stripe API error:', error);
+            
+            // Check for specific Stripe errors
+            if (error.type === 'StripeAuthenticationError') {
+                return NextResponse.json(
+                    { 
+                        error: 'Payment service authentication error',
+                        code: 'STRIPE_AUTH_ERROR'
+                    },
+                    { status: 503 }
+                );
+            }
+            
+            if (error.type === 'StripeConnectionError') {
+                return NextResponse.json(
+                    { 
+                        error: 'Payment service connection error',
+                        code: 'STRIPE_CONNECTION_ERROR'
+                    },
+                    { status: 503 }
+                );
+            }
+
             return NextResponse.json(
                 { 
                     error: 'Payment service error',
