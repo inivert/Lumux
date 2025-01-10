@@ -1,30 +1,50 @@
 /* eslint-disable @next/next/no-img-element */
 import AccountMenu from "../../AccountMenu";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import getUpdatedData from "@/libs/getUpdatedData";
 
 export default function AccountButton({ user }: any) {
-	const avatarUrl = `/api/avatar?name=${encodeURIComponent(user?.name || 'User')}&size=48`;
+	const [userData, setUserData] = useState(user);
+
+	useEffect(() => {
+		const fetchUserData = async () => {
+			if (user?.email) {
+				const data = await getUpdatedData(user.email);
+				if (data) {
+					setUserData(data);
+				}
+			}
+		};
+
+		fetchUserData();
+	}, [user?.email]);
+
+	const avatarUrl = `/api/avatar?name=${encodeURIComponent(userData?.name || '')}&size=48`;
 
 	return (
 		<div className='group relative flex items-center'>
 			<div className='flex items-center gap-4'>
 				<div className="relative h-[48px] w-[48px] overflow-hidden rounded-full">
-					<Image
-						src={avatarUrl}
-						alt={user?.name || "profile"}
-						fill
-						className='object-cover'
-						sizes="48px"
-						unoptimized
-						priority
-					/>
+					<div className='absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full animate-pulse' />
+					<div className='relative h-full w-full overflow-hidden rounded-full border-4 border-white dark:border-gray-700 shadow-lg transition-transform duration-300 group-hover:scale-105'>
+						<Image
+							src={avatarUrl}
+							alt={userData?.name || "profile"}
+							fill
+							className='object-cover'
+							sizes="48px"
+							unoptimized
+							priority
+							/>
+					</div>
 				</div>
-				<p className='font-satoshi text-base font-medium capitalize text-dark dark:text-white'>
-					{user?.name}
+				<p className='text-base font-medium capitalize text-dark dark:text-white'>
+					{userData?.name || ''}
 				</p>
 
 				<svg
-					className='group-hover:rotate-180'
+					className='group-hover:rotate-180 transition-transform duration-200'
 					width='19'
 					height='18'
 					viewBox='0 0 19 18'
@@ -41,7 +61,7 @@ export default function AccountButton({ user }: any) {
 			</div>
 
 			<div className='shadow-3 border-[.5px]border-stroke invisible absolute right-0 top-15 z-999 w-[280px] rounded-lg bg-white pb-2.5 pt-3.5 opacity-0 shadow-md duration-500 group-hover:visible group-hover:translate-y-2 group-hover:opacity-100 dark:bg-gray-dark'>
-				<AccountMenu user={user} />
+				<AccountMenu user={userData} />
 			</div>
 		</div>
 	);

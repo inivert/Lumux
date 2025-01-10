@@ -2,34 +2,54 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import getUpdatedData from "@/libs/getUpdatedData";
 
 const AccountMenu = ({ user }: any) => {
-	const avatarUrl = `/api/avatar?name=${encodeURIComponent(user?.name || 'User')}&size=32`;
+	const [userData, setUserData] = useState(user);
+
+	useEffect(() => {
+		const fetchUserData = async () => {
+			if (user?.email) {
+				const data = await getUpdatedData(user.email);
+				if (data) {
+					setUserData(data);
+				}
+			}
+		};
+
+		fetchUserData();
+	}, [user?.email]);
+
+	const avatarUrl = `/api/avatar?name=${encodeURIComponent(userData?.name || '')}&size=32`;
 
 	return (
 		<>
 			<div className='mb-2 flex items-center border-b border-stroke px-3 py-3 dark:border-stroke-dark'>
 				<div className='relative mr-2.5 h-8 w-8 overflow-hidden rounded-full'>
-					<Image
-						src={avatarUrl}
-						alt={user?.name || "profile"}
-						fill
-						className='object-cover'
-						sizes="32px"
-						unoptimized
-						priority
-					/>
+					<div className='absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full animate-pulse' />
+					<div className='relative h-full w-full overflow-hidden rounded-full border-2 border-white dark:border-gray-700 shadow-lg'>
+						<Image
+							src={avatarUrl}
+							alt={userData?.name || "profile"}
+							fill
+							className='object-cover'
+							sizes="32px"
+							unoptimized
+							priority
+						/>
+					</div>
 				</div>
 				<div className="min-w-0">
-					<p className='font-satoshi text-sm font-medium text-dark dark:text-white truncate'>
-						{user?.name}
+					<p className='text-sm font-medium text-dark dark:text-white truncate'>
+						{userData?.name || ''}
 					</p>
 					<p className='text-xs text-body dark:text-gray-5 truncate'>
-						{user?.email}
+						{userData?.email}
 					</p>
-					{user?.websiteName && (
+					{userData?.websiteName && (
 						<p className='text-xs text-primary dark:text-primary truncate'>
-							{user.websiteName}
+							{userData.websiteName}
 						</p>
 					)}
 				</div>
@@ -39,8 +59,8 @@ const AccountMenu = ({ user }: any) => {
 				<ul>
 					<li className='mx-2 mb-1'>
 						<Link
-							href={user?.role?.toLowerCase() === "admin" ? "/admin" : "/user"}
-							className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 font-satoshi text-sm font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'
+							href={userData?.role?.toLowerCase() === "admin" ? "/admin" : "/user"}
+							className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-body hover:bg-gray-2 hover:text-dark dark:hover:bg-primary dark:hover:text-white'
 						>
 							<span className="w-4">
 								<svg

@@ -1,6 +1,6 @@
 "use client";
 import { signIn } from "next-auth/react";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 export default function GoogleSigninButton({ text }: { text: string }) {
 	const handleClick = async () => {
@@ -23,7 +23,7 @@ export default function GoogleSigninButton({ text }: { text: string }) {
 	return (
 		<button
 			onClick={handleClick}
-			className='flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-stroke font-satoshi text-base font-medium text-dark duration-300 hover:bg-gray-1 dark:border-stroke-dark dark:text-white dark:hover:bg-white/5'
+			className='flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-stroke text-base font-medium text-dark duration-300 hover:bg-gray-1 dark:border-stroke-dark dark:text-white dark:hover:bg-white/5'
 		>
 			<svg
 				width='21'
@@ -49,7 +49,7 @@ export default function GoogleSigninButton({ text }: { text: string }) {
 					fill='#EB4335'
 				/>
 			</svg>
-			{text} with Google
+			{text}
 		</button>
 	);
 }

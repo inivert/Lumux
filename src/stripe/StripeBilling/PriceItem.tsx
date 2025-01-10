@@ -174,7 +174,7 @@ const PriceItem = ({ plan, isBilling, showYearly }: Props) => {
           </div>
           <div>
             <h3
-              className={`font-satoshi text-xl font-bold mb-0.5 ${
+              className={`text-xl font-bold mb-0.5 ${
                 plan.isAddon
                   ? 'text-black dark:text-white'
                   : active && !isBilling

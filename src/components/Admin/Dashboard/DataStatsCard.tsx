@@ -14,17 +14,17 @@ export default function DataStatsCard({ data }: { data: DataStats }) {
 			</div>
 
 			<div>
-				<h3 className='font-satoshi text-2xl font-bold text-dark dark:text-white'>
+				<h3 className='text-2xl font-bold text-dark dark:text-white'>
 					{value}
 				</h3>
 
 				<div className='flex items-center justify-between'>
-					<p className='font-satoshi text-sm font-medium text-body dark:text-gray-4'>
+					<p className='text-sm font-medium text-body dark:text-gray-4'>
 						{content}
 					</p>
 
 					<p
-						className={`flex items-center gap-1.5 font-satoshi text-sm font-medium ${
+						className={`flex items-center gap-1.5 text-sm font-medium ${
 							isIncrease ? "text-[#00BC55]" : "text-red"
 						}`}
 					>

@@ -7,7 +7,7 @@ export default function TextareaGroup(props: any) {
 		<div>
 			<label
 				htmlFor={name}
-				className='mb-2.5 block font-satoshi text-base font-medium text-dark dark:text-white'
+				className='mb-2.5 block text-base font-medium text-dark dark:text-white'
 			>
 				{label}
 			</label>

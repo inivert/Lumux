@@ -1,21 +1,36 @@
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import AccountMenu from "../Common/AccountMenu";
+import getUpdatedData from "@/libs/getUpdatedData";
 
 const Account = ({ navbarOpen }: { navbarOpen: boolean }) => {
 	const [dropdown, setDropdown] = useState(false);
 	const { data: session } = useSession();
+	const [userData, setUserData] = useState(session?.user);
+
+	useEffect(() => {
+		const fetchUserData = async () => {
+			if (session?.user?.email) {
+				const data = await getUpdatedData(session.user.email);
+				if (data) {
+					setUserData(data);
+				}
+			}
+		};
+
+		fetchUserData();
+	}, [session?.user?.email]);
 
 	return (
 		<div className='group relative block'>
 			<button
 				onClick={() => setDropdown(!dropdown)}
-				className={`flex items-center rounded-lg bg-primary px-2.5 py-1.5 font-satoshi text-xs sm:text-sm font-medium text-white hover:bg-primary-dark transition-colors duration-200`}
+				className={`flex items-center rounded-lg bg-primary px-2.5 py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-primary-dark transition-colors duration-200`}
 			>
 				<span className="hidden sm:inline">Account</span>
 				<span className="sm:hidden">
-					{session?.user?.name?.charAt(0) || 'A'}
+					{userData?.name?.charAt(0) || ''}
 				</span>
 				<svg
 					className={`ml-1 transition-transform duration-200 ${dropdown ? 'rotate-180' : ''} hidden sm:block`}
@@ -43,7 +58,7 @@ const Account = ({ navbarOpen }: { navbarOpen: boolean }) => {
 					navbarOpen ? "xl:invisible xl:opacity-0" : ""
 				}`}
 			>
-				<AccountMenu user={session?.user} />
+				<AccountMenu user={userData} />
 			</div>
 		</div>
 	);

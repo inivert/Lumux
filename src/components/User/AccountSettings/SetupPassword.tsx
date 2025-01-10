@@ -1,92 +1,55 @@
 "use client";
 import { useState } from "react";
-import Card from "@/components/Common/Dashboard/Card";
-import FormButton from "@/components/Common/Dashboard/FormButton";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import Card from "@/components/Common/Card";
 import InputGroup from "@/components/Common/Dashboard/InputGroup";
-import { useSession } from "next-auth/react";
-import axios from "axios";
-import toast from "react-hot-toast";
+import FormButton from "@/components/Common/FormButton";
 import Loader from "@/components/Common/Loader";
-import z from "zod";
-
-const schema = z
-  .object({
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters long" })
-      .refine((val) => /[A-Z]/.test(val), {
-        message: "Password must contain at least one uppercase letter.",
-      })
-      .refine((val) => /[a-z]/.test(val), {
-        message: "Password must contain at least one lowercase letter.",
-      })
-      .refine((val) => /\d/.test(val), {
-        message: "Password must contain at least one number.",
-      })
-      .refine((val) => /[@$!%*?&]/.test(val), {
-        message: "Password must contain at least one special character.",
-      }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
 
 export default function SetupPassword() {
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     password: "",
     confirmPassword: "",
   });
-  const [loading, setLoading] = useState(false);
-  const { data: session, update } = useSession();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setData({
-      ...data,
-      [e.target.name]: e.target.value,
-    });
+  const router = useRouter();
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-
-    if (!session?.user?.email) {
-      toast.error("Please login first!");
-      return;
-    }
-
-    const result = schema.safeParse(data);
-    if (!result.success) {
-      toast.error(result.error.issues[0].message);
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await axios.post("/api/user/setup-password", {
-        password: data.password,
-        email: session.user.email,
-      });
+      if (data.password !== data.confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
 
-      toast.success("Password set successfully!");
-      setData({
-        password: "",
-        confirmPassword: "",
-      });
-      
-      // Update session to reflect that password has been set
-      await update({
-        ...session,
-        user: {
-          ...session.user,
-          hasPassword: true,
+      const response = await fetch("/api/user/setup-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify(data),
       });
 
-    } catch (error: any) {
-      toast.error(error?.response?.data || "Failed to set password");
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("Password set successfully");
+        router.push("/user");
+      } else {
+        toast.error(result.message || "Something went wrong");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to set password");
     } finally {
       setLoading(false);
     }
@@ -96,7 +59,7 @@ export default function SetupPassword() {
     <div className="w-full max-w-[525px]">
       <Card>
         <div className="mb-9">
-          <h3 className="font-satoshi text-custom-2xl font-bold tracking-[-.5px] text-dark dark:text-white">
+          <h3 className="text-custom-2xl font-bold tracking-[-.5px] text-dark dark:text-white">
             Set Up Your Password
           </h3>
           <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
