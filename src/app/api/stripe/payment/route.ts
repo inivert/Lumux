@@ -351,8 +351,24 @@ export async function POST(req: Request) {
                 billing_address_collection: 'required',
                 line_items: lineItems,
                 mode: hasSubscription ? 'subscription' : 'payment',
-                success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
-                cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
+                success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?status=success`,
+                cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?status=canceled`,
+                ...(hasSubscription ? {
+                    subscription_data: {
+                        metadata: {
+                            userId: session.user.id,
+                            items: JSON.stringify(itemsMetadata)
+                        }
+                    }
+                } : {
+                    payment_intent_data: {
+                        setup_future_usage: 'off_session',
+                        metadata: {
+                            userId: session.user.id,
+                            items: JSON.stringify(itemsMetadata)
+                        }
+                    }
+                }),
                 metadata: {
                     userId: session.user.id,
                     items: JSON.stringify(itemsMetadata)

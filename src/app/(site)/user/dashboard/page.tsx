@@ -3,6 +3,7 @@ import Breadcrumb from "@/components/Common/Dashboard/Breadcrumb";
 import { getAuthSession } from "@/libs/auth";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
+import PaymentStatus from "@/components/Common/PaymentStatus";
 
 export const metadata: Metadata = {
 	title: `User Dashboard - ${process.env.SITE_NAME}`,
@@ -19,6 +20,9 @@ export default async function DashboardPage() {
 	return (
 		<>
 			<Breadcrumb pageTitle="Dashboard Overview" />
+			
+			{/* Payment Status Notifications */}
+			<PaymentStatus />
 			
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
 				<div className="w-20 h-20 mb-6 text-primary">

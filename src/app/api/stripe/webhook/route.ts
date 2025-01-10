@@ -34,6 +34,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
         const mainPlan = items.find(item => !item.isSubscription);
         const addons = items.filter(item => item.isSubscription);
 
+        // Get detailed subscription status
+        const detailedStatus = getDetailedSubscriptionStatus(subscription);
+
         // Update user's products in the database
         await prisma.user.update({
             where: { id: metadata.userId },
@@ -44,18 +47,30 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
                             mainPlan: mainPlan ? JSON.stringify({
                                 productId: mainPlan.productId,
                                 priceId: mainPlan.priceId,
-                                status: 'active',
+                                status: detailedStatus,
                                 currentPeriodEnd: subscription.current_period_end
                                     ? new Date(subscription.current_period_end * 1000)
+                                    : undefined,
+                                trialEnd: subscription.trial_end
+                                    ? new Date(subscription.trial_end * 1000)
+                                    : undefined,
+                                cancelAt: subscription.cancel_at
+                                    ? new Date(subscription.cancel_at * 1000)
                                     : undefined
                             }) : undefined,
                             addons: addons.map(addon => JSON.stringify({
                                 productId: addon.productId,
                                 priceId: addon.priceId,
                                 isYearly: addon.isYearly,
-                                status: 'active',
+                                status: detailedStatus,
                                 currentPeriodEnd: subscription.current_period_end
                                     ? new Date(subscription.current_period_end * 1000)
+                                    : undefined,
+                                trialEnd: subscription.trial_end
+                                    ? new Date(subscription.trial_end * 1000)
+                                    : undefined,
+                                cancelAt: subscription.cancel_at
+                                    ? new Date(subscription.cancel_at * 1000)
                                     : undefined
                             }))
                         },
@@ -63,9 +78,15 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
                             mainPlan: mainPlan ? JSON.stringify({
                                 productId: mainPlan.productId,
                                 priceId: mainPlan.priceId,
-                                status: 'active',
+                                status: detailedStatus,
                                 currentPeriodEnd: subscription.current_period_end
                                     ? new Date(subscription.current_period_end * 1000)
+                                    : undefined,
+                                trialEnd: subscription.trial_end
+                                    ? new Date(subscription.trial_end * 1000)
+                                    : undefined,
+                                cancelAt: subscription.cancel_at
+                                    ? new Date(subscription.cancel_at * 1000)
                                     : undefined
                             }) : undefined,
                             addons: {
@@ -73,9 +94,15 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
                                     productId: addon.productId,
                                     priceId: addon.priceId,
                                     isYearly: addon.isYearly,
-                                    status: 'active',
+                                    status: detailedStatus,
                                     currentPeriodEnd: subscription.current_period_end
                                         ? new Date(subscription.current_period_end * 1000)
+                                        : undefined,
+                                    trialEnd: subscription.trial_end
+                                        ? new Date(subscription.trial_end * 1000)
+                                        : undefined,
+                                    cancelAt: subscription.cancel_at
+                                        ? new Date(subscription.cancel_at * 1000)
                                         : undefined
                                 }))
                             }
@@ -84,10 +111,45 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
                 }
             }
         });
+
+        console.log('Successfully updated subscription:', {
+            userId: metadata.userId,
+            subscriptionId: subscription.id,
+            status: detailedStatus,
+            mainPlan: mainPlan?.productId,
+            addonsCount: addons.length
+        });
     } catch (error) {
-        console.error('Error handling subscription created:', error);
+        console.error('Error handling subscription created:', {
+            error,
+            subscriptionId: subscription.id,
+            userId: metadata.userId
+        });
         throw error;
     }
+}
+
+// Helper function to get detailed subscription status
+function getDetailedSubscriptionStatus(subscription: Stripe.Subscription): string {
+    if (subscription.status === 'active') {
+        if (subscription.cancel_at_period_end) {
+            return 'active_canceling';
+        }
+        if (subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000)) {
+            return 'active_trial';
+        }
+        return 'active';
+    }
+    if (subscription.status === 'past_due') {
+        return 'payment_overdue';
+    }
+    if (subscription.status === 'unpaid') {
+        return 'payment_failed';
+    }
+    if (subscription.status === 'canceled') {
+        return 'canceled';
+    }
+    return subscription.status;
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
@@ -112,11 +174,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         const mainPlan = userProductsRecord.mainPlan ? JSON.parse(userProductsRecord.mainPlan as string) : undefined;
         const addons = userProductsRecord.addons?.map(addon => JSON.parse(addon as string)) || [];
 
-        // Update status and period end
-        const status = subscription.status === 'active' ? 'active' : 'inactive';
-        const currentPeriodEnd = subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000)
-            : undefined;
+        // Get detailed status
+        const detailedStatus = getDetailedSubscriptionStatus(subscription);
 
         // Update the records
         await prisma.userProducts.update({
@@ -124,18 +183,46 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             data: {
                 mainPlan: mainPlan ? JSON.stringify({
                     ...mainPlan,
-                    status,
-                    currentPeriodEnd
+                    status: detailedStatus,
+                    currentPeriodEnd: subscription.current_period_end
+                        ? new Date(subscription.current_period_end * 1000)
+                        : undefined,
+                    trialEnd: subscription.trial_end
+                        ? new Date(subscription.trial_end * 1000)
+                        : undefined,
+                    cancelAt: subscription.cancel_at
+                        ? new Date(subscription.cancel_at * 1000)
+                        : undefined
                 }) : undefined,
                 addons: addons.map(addon => JSON.stringify({
                     ...addon,
-                    status,
-                    currentPeriodEnd
+                    status: detailedStatus,
+                    currentPeriodEnd: subscription.current_period_end
+                        ? new Date(subscription.current_period_end * 1000)
+                        : undefined,
+                    trialEnd: subscription.trial_end
+                        ? new Date(subscription.trial_end * 1000)
+                        : undefined,
+                    cancelAt: subscription.cancel_at
+                        ? new Date(subscription.cancel_at * 1000)
+                        : undefined
                 }))
             }
         });
+
+        console.log('Successfully updated subscription:', {
+            userId: metadata.userId,
+            subscriptionId: subscription.id,
+            status: detailedStatus,
+            mainPlan: mainPlan?.productId,
+            addonsCount: addons.length
+        });
     } catch (error) {
-        console.error('Error handling subscription updated:', error);
+        console.error('Error handling subscription updated:', {
+            error,
+            subscriptionId: subscription.id,
+            userId: metadata.userId
+        });
         throw error;
     }
 }
@@ -260,6 +347,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
 }
 
+async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
+    // If there's a customer ID, we can get their email for notifications
+    if (paymentIntent.customer) {
+        try {
+            const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+            console.log('Payment failed for customer:', {
+                customerId: paymentIntent.customer,
+                email: customer.email,
+                amount: paymentIntent.amount,
+                currency: paymentIntent.currency
+            });
+            
+            // Here you could send an email notification about the failed payment
+            // Or update the user's status in your database
+        } catch (error) {
+            console.error('Error handling payment failure:', error);
+        }
+    }
+}
+
 export async function POST(req: Request) {
     const body = await req.text();
     const signature = headers().get('stripe-signature');
@@ -305,6 +412,17 @@ export async function POST(req: Request) {
                 break;
             case 'customer.subscription.deleted':
                 await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+                break;
+            case 'payment_intent.payment_failed':
+                await handlePaymentFailed(event.data.object as Stripe.PaymentIntent);
+                break;
+            case 'payment_intent.requires_action':
+                // Handle cases where additional authentication is required
+                console.log('Payment requires additional action:', event.data.object);
+                break;
+            case 'payment_intent.succeeded':
+                // Payment was successful
+                console.log('Payment succeeded:', event.data.object);
                 break;
             default:
                 console.log('Unhandled event type:', event.type);
