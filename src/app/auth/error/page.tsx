@@ -1,52 +1,42 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Button } from "@/app/components/common/button";
+import { ArrowLeft, Calendar } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function ErrorPage() {
-	const searchParams = useSearchParams();
-	const error = searchParams.get("error");
-
-	const getErrorMessage = () => {
-		switch (error) {
-			case "OAuthAccountNotLinked":
-				return {
-					title: "Account Already Exists",
-					message: "An account with this email already exists. Please sign in using your original sign-in method or use the magic link option.",
-				};
-			case "AccessDenied":
-				return {
-					title: "Access Denied",
-					message: "You don't have permission to access this resource.",
-				};
-			default:
-				return {
-					title: "Authentication Error",
-					message: "An error occurred during authentication. Please try again.",
-				};
-		}
-	};
-
-	const errorInfo = getErrorMessage();
+	const router = useRouter();
+	const calendlyUrl = "https://calendly.com/codelumusa";
 
 	return (
-		<div className="min-h-screen flex items-center justify-center px-4">
+		<div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
 			<div className="max-w-md w-full space-y-8 text-center">
-				<div>
-					<h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
-						{errorInfo.title}
-					</h2>
-					<p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-						{errorInfo.message}
+				<div className="space-y-4">
+					<h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+						Private Access Only
+					</h1>
+					<p className="text-gray-600 dark:text-gray-400">
+						This is a private website. Access is granted only after a personal meeting with the admin. 
+						Please schedule a meeting to discuss your needs and get access.
 					</p>
-				</div>
-				<div className="mt-4">
-					<Link
-						href="/auth/signin"
-						className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-					>
-						Return to Sign In
-					</Link>
+					<div className="space-y-4 mt-8">
+						<Button
+							onClick={() => window.open(calendlyUrl, '_blank')}
+							className="w-full bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
+						>
+							<Calendar className="w-4 h-4" />
+							Schedule a Meeting
+						</Button>
+						<Button
+							onClick={() => router.push('/')}
+							variant="outline"
+							className="w-full flex items-center justify-center gap-2"
+						>
+							<ArrowLeft className="w-4 h-4" />
+							Back to Home
+						</Button>
+					</div>
 				</div>
 			</div>
 		</div>

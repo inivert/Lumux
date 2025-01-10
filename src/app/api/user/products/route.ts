@@ -6,9 +6,15 @@ import { prisma } from '@/libs/prisma';
 
 export async function GET() {
     try {
+        // Get session
         const session = await getServerSession(authOptions);
+        console.log('Session:', { 
+            exists: !!session, 
+            hasUser: !!session?.user, 
+            email: session?.user?.email 
+        });
         
-        if (!session?.user?.id) {
+        if (!session?.user?.email) {
             return new NextResponse(
                 JSON.stringify({ 
                     error: 'You must be signed in to view your products',
@@ -24,15 +30,44 @@ export async function GET() {
             );
         }
 
-        // Get user's Stripe customer ID
-        const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
-            include: { subscription: true }
-        });
+        // Get user by email
+        let user;
+        try {
+            user = await prisma.user.findUnique({
+                where: { email: session.user.email },
+                include: { subscription: true }
+            });
+            console.log('User found:', { 
+                exists: !!user, 
+                hasCustomerId: !!user?.customerId,
+                hasSubscription: !!user?.subscription 
+            });
+        } catch (error) {
+            console.error('Prisma error finding user:', error);
+            return NextResponse.json(
+                { 
+                    error: 'Database error while finding user',
+                    code: 'DATABASE_ERROR'
+                },
+                { status: 503 }
+            );
+        }
 
-        const customerId = user?.customerId || user?.subscription?.stripeCustomerId;
+        if (!user) {
+            return new NextResponse(
+                JSON.stringify({ 
+                    error: 'User not found',
+                    code: 'NOT_FOUND'
+                }), 
+                { status: 404 }
+            );
+        }
+
+        const customerId = user.customerId || user.subscription?.stripeCustomerId;
+        console.log('Customer ID:', { exists: !!customerId });
 
         if (!customerId) {
+            // If user has no customer ID, they have no products
             return NextResponse.json(
                 { products: [] },
                 {
@@ -44,21 +79,39 @@ export async function GET() {
             );
         }
 
-        // Get all subscriptions with minimal expansion
-        const subscriptions = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'active',
-            expand: ['data.items.data.price']
-        });
+        // Get Stripe data
+        let subscriptions;
+        let charges;
+        try {
+            [subscriptions, charges] = await Promise.all([
+                stripe.subscriptions.list({
+                    customer: customerId,
+                    status: 'active',
+                    expand: ['data.items.data.price']
+                }),
+                stripe.charges.list({
+                    customer: customerId,
+                    limit: 100,
+                    expand: ['data.metadata']
+                })
+            ]);
+            console.log('Stripe data fetched:', {
+                subscriptionsCount: subscriptions.data.length,
+                chargesCount: charges.data.length
+            });
+        } catch (error: any) {
+            console.error('Stripe API error:', error);
+            return NextResponse.json(
+                { 
+                    error: 'Payment service error',
+                    code: 'STRIPE_ERROR',
+                    details: error.message
+                },
+                { status: 503 }
+            );
+        }
 
-        // Get one-time purchases
-        const charges = await stripe.charges.list({
-            customer: customerId,
-            limit: 100,
-            expand: ['data.metadata']
-        });
-
-        // Extract product IDs from subscriptions and charges
+        // Extract product IDs
         const productIds = new Set<string>();
 
         // Add subscription products
@@ -72,12 +125,15 @@ export async function GET() {
 
         // Add one-time purchase products
         charges.data.forEach(charge => {
-            if (charge.invoice) {
-                return; // Skip subscription charges
-            }
+            if (charge.invoice) return; // Skip subscription charges
             if (charge.metadata?.productId) {
                 productIds.add(charge.metadata.productId);
             }
+        });
+
+        console.log('Found products:', {
+            count: productIds.size,
+            ids: Array.from(productIds)
         });
 
         return NextResponse.json(
@@ -90,20 +146,38 @@ export async function GET() {
             }
         );
 
-    } catch (error) {
-        console.error('Error fetching user products:', error);
+    } catch (error: any) {
+        console.error('Unhandled error in products API:', error);
+        
+        if (error.type === 'StripeError') {
+            return NextResponse.json(
+                { 
+                    error: 'Payment service error',
+                    code: 'STRIPE_ERROR',
+                    details: error.message
+                },
+                { status: 503 }
+            );
+        }
+
+        if (error.code?.startsWith('P')) {
+            return NextResponse.json(
+                { 
+                    error: 'Database error',
+                    code: 'DATABASE_ERROR',
+                    details: error.message
+                },
+                { status: 503 }
+            );
+        }
+
         return NextResponse.json(
             { 
                 error: 'An error occurred while fetching your products',
-                code: 'INTERNAL_ERROR'
+                code: 'INTERNAL_ERROR',
+                details: error.message
             },
-            { 
-                status: 500,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-store, max-age=0',
-                }
-            }
+            { status: 500 }
         );
     }
 } 

@@ -1,5 +1,6 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { NextAuthOptions, DefaultSession } from "next-auth";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
 import { prisma } from "@/libs/prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -16,9 +17,10 @@ const bcryptjs = require("bcryptjs");
 const PROTECTED_ADMIN_EMAIL = 'mejiacarlos634@gmail.com';
 
 // Custom adapter to protect admin user
-const customAdapter = {
-	...PrismaAdapter(prisma),
-	deleteUser: async (userId: string): Promise<void> => {
+const prismaAdapter = PrismaAdapter(prisma);
+const customAdapter: Adapter = {
+	...prismaAdapter,
+	deleteUser: async (userId: string) => {
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
 			select: { email: true }
@@ -30,23 +32,37 @@ const customAdapter = {
 
 		await prisma.user.delete({ where: { id: userId } });
 	},
-	createUser: async (data: any) => {
-		const user = await prisma.user.create({ data });
+	createUser: async (data: Omit<AdapterUser, "id">) => {
+		// Ensure email is never null as required by AdapterUser
+		const userData = {
+			...data,
+			email: data.email || '',
+			role: "USER" as const,
+		};
+
+		const user = await prisma.user.create({ data: userData });
 		
 		// Ensure admin user exists
 		await prisma.user.upsert({
 			where: { email: PROTECTED_ADMIN_EMAIL },
-			update: { role: 'ADMIN' },
+			update: { role: 'ADMIN' as const },
 			create: {
 				email: PROTECTED_ADMIN_EMAIL,
 				name: 'Carlos',
-				role: 'ADMIN',
+				role: 'ADMIN' as const,
 			},
 		});
 
-		return user;
+		// Convert to AdapterUser format
+		return {
+			id: user.id,
+			email: user.email || '',
+			emailVerified: user.emailVerified,
+			name: user.name,
+			image: user.image,
+		} as AdapterUser;
 	}
-} as const;
+};
 
 type UserRole = "USER" | "ADMIN";
 
@@ -86,6 +102,7 @@ export const authOptions: NextAuthOptions = {
 	secret: process.env.NEXTAUTH_SECRET!,
 	session: {
 		strategy: "jwt",
+		maxAge: 30 * 24 * 60 * 60, // 30 days
 	},
 	providers: [
 		EmailProvider({
@@ -95,11 +112,15 @@ export const authOptions: NextAuthOptions = {
 				const { host } = new URL(url);
 				const siteName = process.env.SITE_NAME || "CodeLumus";
 				
+				// Modify the URL to redirect to the correct dashboard path
+				const callbackUrl = new URL(url);
+				callbackUrl.searchParams.set('callbackUrl', '/user/dashboard');
+				
 				const emailHtml = `
 					<div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
 						<h2 style="color: #333; margin-bottom: 20px;">Sign in to ${siteName}</h2>
 						<p style="color: #666; margin-bottom: 20px;">Click the button below to sign in to your account.</p>
-						<a href="${url}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px;">Sign in</a>
+						<a href="${callbackUrl.toString()}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px;">Sign in</a>
 						<p style="color: #999; font-size: 14px;">If you didn't request this email, you can safely ignore it.</p>
 						<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
 						<p style="color: #999; font-size: 12px;">This link was sent to ${identifier} and will expire in 24 hours.</p>
@@ -189,11 +210,6 @@ export const authOptions: NextAuthOptions = {
 	],
 	callbacks: {
 		async signIn({ user, account, profile, email, credentials }) {
-			// Always allow Google sign-in
-			if (account?.provider === 'google') {
-				return true;
-			}
-
 			const userEmail = user.email?.toLowerCase();
 			
 			// Always allow admin email
@@ -201,16 +217,42 @@ export const authOptions: NextAuthOptions = {
 				return true;
 			}
 
-			// For credentials provider, check invitation
-			if (account?.provider === 'credentials') {
-				if (!userEmail) return false;
-				
-				const invitation = await prisma.invitation.findFirst({
-					where: { email: userEmail }
-				});
+			// Check if user already exists in the database
+			const existingUser = await prisma.user.findUnique({
+				where: { email: userEmail }
+			});
 
-				return !!invitation;
+			if (existingUser) {
+				return true; // Allow existing users to sign in
 			}
+
+			// For new users, check for valid invitation
+			const invitation = await prisma.invitation.findFirst({
+				where: { 
+					email: userEmail,
+					accepted: false,
+					expiresAt: {
+						gt: new Date()
+					}
+				}
+			});
+
+			if (!invitation) {
+				console.log('No valid invitation found for:', userEmail);
+				throw new Error(
+					'This is a private website. Access is granted only after a personal meeting with the admin. ' +
+					'Please schedule a meeting to discuss your needs.'
+				);
+			}
+
+			// If this is the first sign in with a valid invitation, mark it as accepted
+			await prisma.invitation.update({
+				where: { id: invitation.id },
+				data: { 
+					accepted: true,
+					userId: user.id
+				}
+			});
 
 			return true;
 		},
@@ -254,37 +296,20 @@ export const authOptions: NextAuthOptions = {
 		},
 
 		async redirect({ url, baseUrl }) {
-			const decodedUrl = decodeURIComponent(url);
-			
-			// For magic link authentication
-			if (decodedUrl.includes('/api/auth/callback/email')) {
-				const session = await getServerSession(authOptions);
-				if (session?.user?.role === "ADMIN") {
-					return `${baseUrl}/admin`;
-				}
-				return `${baseUrl}/user`;
-			}
-
-			if (decodedUrl.startsWith('/auth/error')) {
-				return decodedUrl;
-			}
-
-			if (decodedUrl.includes('callbackUrl=')) {
-				const urlObj = new URL(decodedUrl);
-				const callbackUrl = urlObj.searchParams.get('callbackUrl');
-				if (callbackUrl) {
-					if (callbackUrl.includes('/auth/signin')) {
-						return baseUrl;
-					}
-					if (callbackUrl.startsWith(baseUrl)) {
-						return callbackUrl;
+			// Ensure users are redirected to the dashboard after sign in
+			if (url.startsWith(baseUrl)) {
+				if (url.includes('callbackUrl')) {
+					const callbackUrl = new URL(url).searchParams.get('callbackUrl');
+					if (callbackUrl) {
+						return `${baseUrl}${callbackUrl}`;
 					}
 				}
+				// Redirect to the correct dashboard path
+				return `${baseUrl}/user/dashboard`;
+			} else if (url.startsWith('/')) {
+				return `${baseUrl}${url}`;
 			}
-
-			if (decodedUrl.startsWith(baseUrl)) return decodedUrl;
-			if (decodedUrl.startsWith("/")) return `${baseUrl}${decodedUrl}`;
-			return baseUrl;
+			return url;
 		},
 	},
 };

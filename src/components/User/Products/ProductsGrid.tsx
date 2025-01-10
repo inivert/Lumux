@@ -200,21 +200,27 @@ const ProductsGrid = () => {
                 withCredentials: true,
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': 'nextauth.csrf-token',
                     'Accept': 'application/json',
                 }
             });
             setOwnedProducts(response.data.products.map((p: any) => p.id));
         } catch (error: any) {
             console.error('Error fetching owned products:', error);
+            const errorMessage = error.response?.data?.error || 'Failed to load your products';
+            const errorCode = error.response?.data?.code;
+
             if (error.response?.status === 401) {
-                console.log('Session status:', status);
-                console.log('Session data:', session);
                 if (status === 'authenticated') {
-                    toast.error('Session validation failed. Please try refreshing the page.');
+                    toast.error('Your session has expired. Please refresh the page.');
                 }
+            } else if (error.response?.status === 404) {
+                toast.error('User profile not found. Please try signing out and back in.');
+            } else if (errorCode === 'STRIPE_ERROR') {
+                toast.error('Payment service is temporarily unavailable. Please try again later.');
+            } else if (errorCode === 'DATABASE_ERROR') {
+                toast.error('Database service is temporarily unavailable. Please try again later.');
             } else {
-                toast.error('Failed to load your products');
+                toast.error(errorMessage);
             }
             setOwnedProducts([]);
         }

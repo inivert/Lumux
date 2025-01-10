@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 	description: `User dashboard overview and statistics`,
 };
 
-const DashboardPage = async () => {
+export default async function DashboardPage() {
 	const session = await getAuthSession();
 	
-	if (!session) {
+	if (!session?.user) {
 		redirect("/auth/signin");
 	}
 
@@ -37,7 +37,7 @@ const DashboardPage = async () => {
 					</svg>
 				</div>
 				<h2 className="text-2xl font-bold text-dark dark:text-white mb-4">
-					Website Analytics Coming Soon
+					Welcome, {session.user.name || session.user.email}!
 				</h2>
 				<p className="text-body dark:text-gray-5 max-w-lg">
 					Your website analytics dashboard is currently in development. 
@@ -47,6 +47,4 @@ const DashboardPage = async () => {
 			</div>
 		</>
 	);
-};
-
-export default DashboardPage; 
+} 

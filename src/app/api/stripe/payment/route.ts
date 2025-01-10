@@ -345,21 +345,28 @@ export async function POST(req: Request) {
                 throw new Error('NEXT_PUBLIC_APP_URL is not set');
             }
 
-            const stripeSession = await stripe.checkout.sessions.create({
+            const checkoutSession = await stripe.checkout.sessions.create({
                 customer: customerId,
-                mode: hasSubscription ? 'subscription' : 'payment',
                 payment_method_types: ['card'],
+                billing_address_collection: 'required',
                 line_items: lineItems,
-                success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/products?canceled=true`,
+                mode: hasSubscription ? 'subscription' : 'payment',
+                success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
+                cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
                 metadata: {
                     userId: session.user.id,
-                    items: JSON.stringify(itemsMetadata),
-                    calculatedTotal: calculatedTotal.toString(),
-                },
+                    items: JSON.stringify(itemsMetadata)
+                }
             });
 
-            return NextResponse.json({ url: stripeSession.url });
+            console.log('Created checkout session:', {
+                sessionId: checkoutSession.id,
+                customerId,
+                userId: session.user.id,
+                items: itemsMetadata
+            });
+
+            return NextResponse.json({ url: checkoutSession.url });
         } catch (stripeError: any) {
             console.error('Stripe error:', stripeError);
             return NextResponse.json(

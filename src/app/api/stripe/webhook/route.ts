@@ -183,6 +183,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+    console.log('Processing checkout completed webhook:', {
+        sessionId: session.id,
+        metadata: session.metadata,
+        customerId: session.customer,
+        mode: session.mode
+    });
+
     const metadata = session.metadata;
     if (!metadata?.userId || !metadata?.items) {
         console.error('Missing metadata in checkout session:', session.id);
@@ -196,6 +203,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         if (session.mode === 'payment') {
             const mainProduct = items[0]; // One-time purchases only have one item
             
+            // First, ensure the user exists
+            const user = await prisma.user.findUnique({
+                where: { id: metadata.userId },
+                include: { products: true }
+            });
+
+            if (!user) {
+                console.error('User not found:', metadata.userId);
+                return;
+            }
+
+            console.log('Creating/updating user products:', {
+                userId: metadata.userId,
+                productId: mainProduct.productId,
+                priceId: mainProduct.priceId
+            });
+
+            // Create or update user products
             await prisma.userProducts.upsert({
                 where: { userId: metadata.userId },
                 create: {
@@ -205,7 +230,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                         priceId: mainProduct.priceId,
                         status: 'completed',
                         purchaseDate: new Date()
-                    })
+                    }),
+                    addons: []
                 },
                 update: {
                     mainPlan: JSON.stringify({
@@ -216,6 +242,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                     })
                 }
             });
+
+            // Update user's Stripe customer ID if not already set
+            if (session.customer && !user.customerId) {
+                await prisma.user.update({
+                    where: { id: metadata.userId },
+                    data: { customerId: session.customer.toString() }
+                });
+            }
+
+            console.log('Successfully processed one-time purchase for user:', metadata.userId);
         }
         // For subscriptions, we'll handle it in the subscription.created event
     } catch (error) {
@@ -251,15 +287,12 @@ export async function POST(req: Request) {
             signature,
             webhookSecret
         );
-    } catch (error: any) {
-        console.error('Webhook signature verification failed:', error.message);
-        return NextResponse.json(
-            { error: 'Webhook signature verification failed' },
-            { status: 400 }
-        );
-    }
 
-    try {
+        console.log('Received webhook event:', {
+            type: event.type,
+            id: event.id
+        });
+
         switch (event.type) {
             case 'checkout.session.completed':
                 await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
@@ -278,11 +311,11 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ received: true });
-    } catch (error: any) {
-        console.error('Webhook handler failed:', error);
+    } catch (error) {
+        console.error('Error processing webhook:', error);
         return NextResponse.json(
-            { error: error.message || 'Webhook handler failed' },
-            { status: 500 }
+            { error: 'Webhook error' },
+            { status: 400 }
         );
     }
 } 

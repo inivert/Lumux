@@ -1,11 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Common/Dashboard/Sidebar";
 import Header from "@/components/Common/Dashboard/Header";
 import { userSidebarData } from "@/staticData/sidebarData";
 
-const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+const UserLayout = ({ children }: { children: React.ReactNode }) => {
 	const [openSidebar, setOpenSidebar] = useState(false);
+	const { data: session, status } = useSession();
+	const router = useRouter();
+
+	useEffect(() => {
+		if (status === "unauthenticated") {
+			router.push("/auth/signin");
+		}
+	}, [status, router]);
+
+	if (status === "loading") {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-gray-2 dark:bg-[#151F34]">
+				<div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+			</div>
+		);
+	}
+
+	if (!session) {
+		return null;
+	}
 
 	return (
 		<>
@@ -32,4 +54,4 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 	);
 };
 
-export default AdminLayout;
+export default UserLayout;
