@@ -33,6 +33,12 @@ export const userMenuData: Menu[] = [
 		title: "Billing",
 		newTab: false,
 		path: "/user/billing",
+	},
+	{
+		id: 4,
+		title: "Support",
+		newTab: false,
+		path: "/user/support",
 	}
 ];
 
