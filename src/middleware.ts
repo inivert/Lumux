@@ -1,91 +1,28 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-// Middleware function to handle both auth and root redirects
 export default withAuth(
-	async function middleware(req) {
-		const token = req.nextauth.token;
-		const { pathname, search } = req.nextUrl;
-		const isAuthPage = pathname.startsWith("/auth");
-		const isSignInPage = pathname === "/auth/signin";
-		const isCallbackPage = pathname.startsWith("/api/auth/callback");
-		const isVerifyRequestPage = pathname === "/auth/verify-request";
-		const isRootPage = pathname === "/";
-		const isAdminPath = pathname.startsWith("/admin");
-		const isUserPath = pathname.startsWith("/user");
-
-		// Handle root page - no need to rewrite, Next.js will handle the route group
-		if (isRootPage) {
-			return NextResponse.next();
+	function middleware(req) {
+		const response = NextResponse.next();
+		
+		// Add security headers
+		response.headers.set("X-Content-Type-Options", "nosniff");
+		response.headers.set("X-Frame-Options", "DENY");
+		response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+		
+		// Add CORS headers for API routes
+		if (req.nextUrl.pathname.startsWith('/api/')) {
+			response.headers.set('Access-Control-Allow-Credentials', 'true');
+			response.headers.set('Access-Control-Allow-Origin', process.env.NEXTAUTH_URL || 'http://localhost:3000');
+			response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+			response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
 		}
-
-		// Allow access to auth-related pages without redirection
-		if (isCallbackPage || isVerifyRequestPage) {
-			return NextResponse.next();
-		}
-
-		// If user is not logged in and trying to access protected routes
-		if (!token && !isAuthPage) {
-			return NextResponse.redirect(new URL("/auth/signin", req.url));
-		}
-
-		// If user has no role, redirect to signin with error
-		if (token && !token.role) {
-			return NextResponse.redirect(new URL("/auth/signin?error=NoRole", req.url));
-		}
-
-		// If user is logged in and trying to access auth pages
-		if (token && isAuthPage) {
-			// Don't redirect if it's a sign-in page with a callback URL
-			if (isSignInPage && search.includes("callbackUrl")) {
-				return NextResponse.next();
-			}
-
-			const userRole = token.role?.toLowerCase();
-			
-			if (userRole === "admin") {
-				return NextResponse.redirect(new URL("/admin", req.url));
-			}
-			return NextResponse.redirect(new URL("/user", req.url));
-		}
-
-		// Role-based access control
-		if (token) {
-			const userRole = token.role?.toLowerCase();
-
-			// Prevent access to admin routes for non-admin users
-			if (isAdminPath && userRole !== "admin") {
-				return NextResponse.redirect(new URL("/user", req.url));
-			}
-
-			// Prevent access to user routes for admin users
-			if (isUserPath && userRole === "admin") {
-				return NextResponse.redirect(new URL("/admin", req.url));
-			}
-
-			// Ensure users are in their correct areas when accessing root
-			if (isRootPage) {
-				if (userRole === "admin") {
-					return NextResponse.redirect(new URL("/admin", req.url));
-				}
-				return NextResponse.redirect(new URL("/user", req.url));
-			}
-		}
-
-		return NextResponse.next();
+		
+		return response;
 	},
 	{
 		callbacks: {
-			authorized: ({ token, req }) => {
-				const { pathname } = req.nextUrl;
-				// Allow access to root and auth-related pages without authorization
-				if (
-					pathname === "/" ||
-					pathname.startsWith("/auth") ||
-					pathname.startsWith("/api/auth/callback")
-				) {
-					return true;
-				}
+			authorized: ({ token }) => {
 				return !!token;
 			},
 		},
@@ -94,12 +31,7 @@ export default withAuth(
 
 export const config = {
 	matcher: [
-		"/",
-		"/admin/:path*",
-		"/user/:path*",
-		"/auth/:path*",
 		"/api/user/:path*",
-		"/api/admin/:path*",
-		"/api/auth/callback/:path*",
+		"/user/:path*",
 	],
 };

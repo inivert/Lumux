@@ -13,6 +13,7 @@
 # production
 /build
 /dist
+Product catalog
 
 # environment variables
 .env

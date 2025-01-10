@@ -1,15 +1,16 @@
 import React from "react";
-import Breadcrumb from "@/components/Common/Dashboard/Breadcrumb";
 import { getAuthSession } from "@/libs/auth";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
-import Card from "@/components/Common/Dashboard/Card";
-import Image from "next/image";
+import { stripe } from "@/libs/stripe";
+import { prisma } from "@/libs/prisma";
+import Breadcrumb from "@/components/Common/Breadcrumb";
+import Card from "@/components/Common/Card";
 import SubscriptionDetails from "@/components/User/Billing/SubscriptionDetails";
 
 export const metadata: Metadata = {
-	title: `Billing - ${process.env.SITE_NAME}`,
-	description: `Manage your subscriptions and billing information`,
+	title: "Billing - Dashboard",
+	description: "Manage your billing and subscription",
 };
 
 const BillingPage = async () => {
@@ -19,7 +20,51 @@ const BillingPage = async () => {
 		redirect("/auth/signin");
 	}
 
-	const stripePortalUrl = "https://billing.stripe.com/p/login/test_bIYdTPc5A0qsguY7ss";
+	// Get user's subscription to find customer ID
+	const user = await prisma.user.findUnique({
+		where: { id: session.user.id },
+		include: { subscription: true }
+	});
+
+	if (!user) {
+		redirect("/auth/signin");
+	}
+
+	const customerId = user.customerId || user.subscription?.stripeCustomerId;
+
+	if (!customerId) {
+		return (
+			<>
+				<Breadcrumb pageTitle="Billing" />
+				<div className="grid gap-8">
+					<Card>
+						<div className="p-6 text-center">
+							<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+								No Active Subscription
+							</h2>
+							<p className="text-gray-600 dark:text-gray-300">
+								You don't have any active subscriptions. Visit our products page to get started.
+							</p>
+							<a
+								href="/user/products"
+								className="mt-4 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+							>
+								View Products
+							</a>
+						</div>
+					</Card>
+				</div>
+			</>
+		);
+	}
+
+	// Create a billing portal session
+	const portalSession = await stripe.billingPortal.sessions.create({
+			customer: customerId,
+			return_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/billing`,
+	});
+
+	const stripePortalUrl = portalSession.url;
 
 	return (
 		<>
@@ -64,23 +109,8 @@ const BillingPage = async () => {
 							<SubscriptionDetails />
 						</div>
 
-						{/* Billing Portal Section */}
-						<div className="space-y-6">
-							<div className="flex items-center gap-3 mb-6">
-								<div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-									<svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none">
-										<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" strokeWidth="2"/>
-										<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="2"/>
-									</svg>
-								</div>
-								<div>
-									<h2 className="text-xl font-semibold text-gray-900 dark:text-white">Manage Subscription</h2>
-									<p className="text-gray-600 dark:text-gray-300">
-										Access the billing portal to manage your subscription
-									</p>
-								</div>
-							</div>
-
+						{/* Billing Portal Link */}
+						<div className="space-y-4">
 							<a 
 								href={stripePortalUrl}
 								target="_blank"

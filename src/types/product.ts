@@ -1,12 +1,7 @@
 export interface Price {
     id: string;
-    amount: number | null;
+    amount: number;
     currency: string;
-    type: 'one_time' | 'recurring';
-    recurring?: {
-        interval: 'day' | 'week' | 'month' | 'year';
-        interval_count: number;
-    } | null;
 }
 
 export interface Product {
@@ -20,6 +15,11 @@ export interface Product {
     monthlyPrice: Price | null;
     yearlyPrice: Price | null;
     oneTimePrice: Price | null;
+    metadata?: {
+        features?: string;
+        addonId?: string;
+        type?: string;
+    };
 }
 
 export interface CartItem {
