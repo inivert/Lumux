@@ -21,6 +21,7 @@ Product catalog
 .env.development
 .env.test
 .env.production
+.env.sentry-build-plugin
 
 # misc
 .DS_Store
