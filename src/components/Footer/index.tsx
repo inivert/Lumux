@@ -8,10 +8,9 @@ const Footer = () => {
 	const currentYear = new Date().getFullYear();
 	
 	const socialLinks = [
-		{ icon: <FiGithub className="w-5 h-5" />, href: "https://github.com/yourusername", label: "GitHub" },
-		{ icon: <FiTwitter className="w-5 h-5" />, href: "https://twitter.com/yourusername", label: "Twitter" },
-		{ icon: <FiLinkedin className="w-5 h-5" />, href: "https://linkedin.com/in/yourusername", label: "LinkedIn" },
-		{ icon: <FiMail className="w-5 h-5" />, href: "mailto:your@email.com", label: "Email" },
+		{ icon: <FiTwitter className="w-5 h-5" />, href: "https://twitter.com/codelumus", label: "Twitter" },
+		{ icon: <FiLinkedin className="w-5 h-5" />, href: "https://linkedin.com/in/carlos-mejiaaguirre", label: "LinkedIn" },
+		{ icon: <FiMail className="w-5 h-5" />, href: "carlos@codelumus.com", label: "Email" },
 	];
 
 	return (
@@ -52,21 +51,6 @@ const Footer = () => {
 						<h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Links</h3>
 						<ul className="space-y-2">
 							<li>
-								<Link href="/projects" className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200">
-									Projects
-								</Link>
-							</li>
-							<li>
-								<Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200">
-									About
-								</Link>
-							</li>
-							<li>
-								<Link href="/blog" className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200">
-									Blog
-								</Link>
-							</li>
-							<li>
 								<Link href="/contact" className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200">
 									Contact
 								</Link>
@@ -95,7 +79,7 @@ const Footer = () => {
 				<div className="pt-8 mt-8 border-t border-gray-200 dark:border-gray-700">
 					<div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
 						<p className="text-gray-600 dark:text-gray-300 text-sm">
-							© {currentYear} Your Name. All rights reserved.
+							© {currentYear} CodeLumus. All rights reserved.
 						</p>
 						<div className="flex space-x-6 text-sm text-gray-600 dark:text-gray-300">
 							<Link href="/privacy" className="hover:text-primary transition-colors duration-200">

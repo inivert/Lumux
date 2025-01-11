@@ -14,7 +14,7 @@ import { sendEmail } from "./email";
 const bcryptjs = require("bcryptjs");
 
 // Protected admin email
-const PROTECTED_ADMIN_EMAIL = 'mejiacarlos634@gmail.com';
+const PROTECTED_ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
 
 // Custom adapter to protect admin user
 const prismaAdapter = PrismaAdapter(prisma);
@@ -102,7 +102,7 @@ export const authOptions: NextAuthOptions = {
 	secret: process.env.NEXTAUTH_SECRET!,
 	session: {
 		strategy: "jwt",
-		maxAge: 30 * 24 * 60 * 60, // 30 days
+		maxAge: 48 * 60 * 60, // 48 hours
 	},
 	providers: [
 		EmailProvider({

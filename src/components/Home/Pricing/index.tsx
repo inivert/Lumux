@@ -1,15 +1,14 @@
 "use client";
 import dynamic from "next/dynamic";
-import { ComponentType } from "react";
 
-const ProductsGrid = dynamic(() => import("@/components/User/Products/ProductsGrid"), {
+const LandingPricing = dynamic(() => import("./LandingPricing"), {
 	ssr: false,
 });
 
 const HomePricing = () => {
 	return (
 		<>
-			<ProductsGrid />
+			<LandingPricing />
 		</>
 	);
 };
