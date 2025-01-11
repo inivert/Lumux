@@ -11,15 +11,16 @@ export interface Product {
     features: string[];
     isAddon: boolean;
     isSubscription: boolean;
-    defaultPrice: Price | null;
     monthlyPrice: Price | null;
     yearlyPrice: Price | null;
     oneTimePrice: Price | null;
-    metadata?: {
+    defaultPrice: Price | null;
+    metadata: {
         features?: string;
         addonId?: string;
         type?: string;
     };
+    isOwned?: boolean;
 }
 
 export interface CartItem {
@@ -28,15 +29,16 @@ export interface CartItem {
     isYearly?: boolean;
 }
 
+export interface UserProduct {
+    productId: string;
+    priceId: string;
+    status: string;
+    isYearly?: boolean;
+    currentPeriodEnd?: Date;
+    purchaseDate?: Date;
+}
+
 export interface UserProducts {
-    mainPlan?: {
-        productId: string;
-        status: string;
-        currentPeriodEnd?: string;
-    };
-    addons: Array<{
-        productId: string;
-        status: string;
-        currentPeriodEnd?: string;
-    }>;
+    userId: string;
+    products: UserProduct[];
 } 

@@ -3,10 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { CartItem, Product, Price } from '@/types/product';
+import { Product, Price } from '@/types/product';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, ChevronDown, ChevronUp, ShoppingCart, Check, Lock } from 'lucide-react';
+
+interface CartItem {
+    productId: string;
+    priceId: string;
+    isYearly?: boolean;
+}
 
 const ProductCard = ({ 
     product, 
@@ -185,10 +191,11 @@ const ProductsGrid = () => {
     const fetchProducts = async () => {
         try {
             const response = await axios.get('/api/stripe/prices');
-            setProducts(response.data.products);
+            setProducts(response.data || []);
         } catch (error) {
             console.error('Error fetching products:', error);
             toast.error('Failed to load products');
+            setProducts([]);
         } finally {
             setLoading(false);
         }
@@ -232,9 +239,9 @@ const ProductsGrid = () => {
         }
     };
 
-    // Filter products based on billing type
-    const visibleProducts = products.filter(p => {
-        const isBuyWebsite = p.name.toLowerCase().includes('buy a website');
+    // Filter products based on billing type (with null check)
+    const visibleProducts = (products || []).filter(p => {
+        const isBuyWebsite = p.name?.toLowerCase().includes('buy a website');
         
         if (billingType === 'onetime') {
             // Only show "Buy a Website" product in one-time view
@@ -244,9 +251,9 @@ const ProductsGrid = () => {
         return !p.isAddon && p.isSubscription && !isBuyWebsite;
     });
 
-    // Separate addons, excluding "Buy a Website" product
-    const addons = products.filter(p => {
-        const isBuyWebsite = p.name.toLowerCase().includes('buy a website');
+    // Separate addons, excluding "Buy a Website" product (with null check)
+    const addons = (products || []).filter(p => {
+        const isBuyWebsite = p.name?.toLowerCase().includes('buy a website');
         return p.isAddon && !isBuyWebsite;
     });
 

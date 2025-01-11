@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+	:root {
+		--primary-rgb: 99, 102, 241;
+	}
+
 	html {
 		@apply scroll-smooth;
 	}

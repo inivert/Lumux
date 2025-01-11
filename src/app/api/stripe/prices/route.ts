@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
-
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
+import { getAuthSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
 
 interface PriceData {
   id: string;
   amount: number;
   currency: string;
+  interval?: string;
 }
 
 interface TransformedProduct {
@@ -31,243 +26,239 @@ interface TransformedProduct {
     addonId?: string;
     type?: string;
   };
+  isOwned?: boolean;
 }
-
-// Product definitions
-const products: TransformedProduct[] = [
-  // Buy Website Product
-  {
-    id: process.env.STRIPE_BUY_WEBSITE_PRODUCT_ID!,
-    name: "BUY A WEBSITE",
-    description: "Get a professionally designed and custom-coded website tailored to your specific needs. One-time payment includes full ownership of all website files and source code.",
-    features: ["Custom website development", "One-time payment", "Full website files delivery"],
-    isAddon: false,
-    isSubscription: false,
-    monthlyPrice: null,
-    yearlyPrice: null,
-    oneTimePrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_BUY_WEBSITE_PRICE!,
-      amount: 589,
-      currency: 'usd'
-    },
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_BUY_WEBSITE_PRICE!,
-      amount: 589,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'one-time'
-    }
-  },
-  // Starter Plan
-  {
-    id: process.env.STRIPE_STARTER_PRODUCT_ID!,
-    name: "STARTER PLAN",
-    description: "Keep your website running smoothly with our essential maintenance package. Includes regular updates, security monitoring, and professional support when you need it.",
-    features: ["Monthly updates", "Basic support", "Security patches"],
-    isAddon: false,
-    isSubscription: true,
-    monthlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_MONTHLY!,
-      amount: 59,
-      currency: 'usd'
-    },
-    yearlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_YEARLY!,
-      amount: 590,
-      currency: 'usd'
-    },
-    oneTimePrice: null,
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_MONTHLY!,
-      amount: 59,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'subscription'
-    }
-  },
-  // Extra Changes Add-on
-  {
-    id: process.env.STRIPE_EXTRA_CHANGES_PRODUCT_ID!,
-    name: "Extra Changes Add-on",
-    description: "Get priority access to more website updates each month. Perfect for businesses that need frequent content updates or design tweaks.",
-    features: ["Additional monthly changes", "Priority handling", "Faster turnaround"],
-    isAddon: true,
-    isSubscription: true,
-    monthlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_EXTRA_CHANGES_PRICE_MONTHLY!,
-      amount: 15,
-      currency: 'usd'
-    },
-    yearlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_EXTRA_CHANGES_PRICE_YEARLY!,
-      amount: 150,
-      currency: 'usd'
-    },
-    oneTimePrice: null,
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_EXTRA_CHANGES_PRICE_MONTHLY!,
-      amount: 15,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'addon',
-      addonId: 'extra-changes'
-    }
-  },
-  // Booking System Add-on
-  {
-    id: process.env.STRIPE_BOOKING_PRODUCT_ID!,
-    name: "Booking System Add-on",
-    description: "Transform your website into a 24/7 booking machine. Allow customers to schedule appointments, make reservations, and manage their bookings automatically.",
-    features: ["Online booking system", "Calendar management", "Automated confirmations"],
-    isAddon: true,
-    isSubscription: true,
-    monthlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_BOOKING_PRICE_MONTHLY!,
-      amount: 25,
-      currency: 'usd'
-    },
-    yearlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_BOOKING_PRICE_YEARLY!,
-      amount: 250,
-      currency: 'usd'
-    },
-    oneTimePrice: null,
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_BOOKING_PRICE_MONTHLY!,
-      amount: 25,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'addon',
-      addonId: 'booking'
-    }
-  },
-  // Content Manager Add-on
-  {
-    id: process.env.STRIPE_CONTENT_MANAGER_PRODUCT_ID!,
-    name: "Content Manager Add-on",
-    description: "Take control of your website content with our powerful content management system. Update text, images, and pages without technical knowledge.",
-    features: ["Content management system", "Easy updates", "Media library"],
-    isAddon: true,
-    isSubscription: true,
-    monthlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_CONTENT_MANAGER_PRICE_MONTHLY!,
-      amount: 20,
-      currency: 'usd'
-    },
-    yearlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_CONTENT_MANAGER_PRICE_YEARLY!,
-      amount: 200,
-      currency: 'usd'
-    },
-    oneTimePrice: null,
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_CONTENT_MANAGER_PRICE_MONTHLY!,
-      amount: 20,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'addon',
-      addonId: 'content-manager'
-    }
-  },
-  // User Accounts Add-on
-  {
-    id: process.env.STRIPE_USER_ACCOUNTS_PRODUCT_ID!,
-    name: "User Accounts Add-on",
-    description: "Create exclusive content and personalized experiences with a secure user authentication system. Perfect for membership sites, premium content, and user communities.",
-    features: ["User authentication", "Member areas", "User management"],
-    isAddon: true,
-    isSubscription: true,
-    monthlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_USER_ACCOUNTS_PRICE_MONTHLY!,
-      amount: 25,
-      currency: 'usd'
-    },
-    yearlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_USER_ACCOUNTS_PRICE_YEARLY!,
-      amount: 250,
-      currency: 'usd'
-    },
-    oneTimePrice: null,
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_USER_ACCOUNTS_PRICE_MONTHLY!,
-      amount: 25,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'addon',
-      addonId: 'user-accounts'
-    }
-  },
-  // E-Commerce Add-on
-  {
-    id: process.env.STRIPE_ECOMMERCE_PRODUCT_ID!,
-    name: "E-Commerce Add-on",
-    description: "Transform your website into a powerful online store. Sell products 24/7 with a complete e-commerce solution including secure payments, inventory tracking, and order management.",
-    features: ["Shopping cart", "Payment processing", "Inventory management", "Order tracking"],
-    isAddon: true,
-    isSubscription: true,
-    monthlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_ECOMMERCE_PRICE_MONTHLY!,
-      amount: 35,
-      currency: 'usd'
-    },
-    yearlyPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_ECOMMERCE_PRICE_YEARLY!,
-      amount: 350,
-      currency: 'usd'
-    },
-    oneTimePrice: null,
-    defaultPrice: {
-      id: process.env.NEXT_PUBLIC_STRIPE_ECOMMERCE_PRICE_MONTHLY!,
-      amount: 35,
-      currency: 'usd'
-    },
-    metadata: {
-      type: 'addon',
-      addonId: 'ecommerce'
-    }
-  }
-];
 
 export async function GET() {
   try {
-    // Filter and sort products
-    const finalProducts = products
-      .filter((product: TransformedProduct) => {
-        const hasPrice = product.monthlyPrice || product.yearlyPrice || product.oneTimePrice;
-        return hasPrice;
-      })
-      .sort((a: TransformedProduct, b: TransformedProduct) => {
-        // Buy Website first
-        if (a.name.toLowerCase().includes('buy a website')) return -1;
-        if (b.name.toLowerCase().includes('buy a website')) return 1;
-        // Then Starter Plan
-        if (a.name.toLowerCase().includes('starter')) return -1;
-        if (b.name.toLowerCase().includes('starter')) return 1;
-        // Then sort by name
-        return a.name.localeCompare(b.name);
-      });
-
-    if (!finalProducts.length) {
+    console.log('Starting /api/stripe/prices request');
+    
+    // Verify Stripe is initialized
+    if (!stripe) {
+      console.error('Stripe is not initialized');
       return NextResponse.json(
-        { error: "No products available" },
-        { status: 404 }
+        { error: 'Stripe configuration error' },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json({ products: finalProducts });
-  } catch (error: any) {
-    console.error("Error in /api/stripe/prices:", error);
+    // Get the current session
+    let session;
+    try {
+      session = await getAuthSession();
+      console.log('Session retrieved:', session ? 'exists' : 'null');
+    } catch (error) {
+      console.error('Error getting session:', error);
+      // Continue without session
+    }
+
+    // Fetch all products from Stripe
+    let stripeProducts;
+    try {
+      console.log('Fetching Stripe products...');
+      stripeProducts = await stripe.products.list({
+        active: true,
+        expand: ['data.default_price']
+      });
+      console.log(`Retrieved ${stripeProducts.data.length} products from Stripe`);
+    } catch (error: any) {
+      console.error('Error fetching Stripe products:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch products from Stripe' },
+        { status: 500 }
+      );
+    }
+
+    // Fetch all prices
+    let stripePrices;
+    try {
+      console.log('Fetching Stripe prices...');
+      stripePrices = await stripe.prices.list({
+        active: true,
+        expand: ['data.product']
+      });
+      console.log(`Retrieved ${stripePrices.data.length} prices from Stripe`);
+    } catch (error: any) {
+      console.error('Error fetching Stripe prices:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch prices from Stripe' },
+        { status: 500 }
+      );
+    }
+
+    // Get user's owned products if authenticated
+    let userProducts: any[] = [];
+    if (session?.user?.email) {
+      try {
+        console.log('Fetching user products for:', session.user.email);
+        const user = await prisma.user.findUnique({
+          where: { email: session.user.email },
+          include: { products: true }
+        });
+        
+        if (user?.products) {
+          userProducts = user.products;
+        }
+        
+        console.log(`Retrieved ${userProducts.length} user products`);
+      } catch (error) {
+        console.error('Error fetching user products:', error);
+      }
+    }
+
+    // Transform products
+    const transformedProducts = stripeProducts.data.map(product => {
+      try {
+        // Get all prices for this product
+        const productPrices = stripePrices.data.filter(price => 
+          typeof price.product === 'string' 
+            ? price.product === product.id 
+            : price.product.id === product.id
+        );
+
+        // Categorize prices
+        const monthlyPrice = productPrices.find(price => 
+          price.recurring?.interval === 'month' && 
+          price.recurring.interval_count === 1
+        );
+        const yearlyPrice = productPrices.find(price => 
+          price.recurring?.interval === 'year' && 
+          price.recurring.interval_count === 1
+        );
+        const oneTimePrice = productPrices.find(price => !price.recurring);
+
+        // Check if product is owned
+        const isOwned = userProducts.some(up => up.productId === product.id);
+
+        // Set descriptions based on product name
+        let description = '';
+        let features: string[] = [];
+        
+        switch (product.name) {
+          case 'BUY A WEBSITE':
+            description = "I create and code the website to your needs, no monthly subscription, you will only receive the folder of the website.";
+            features = [
+              "Custom coded website",
+              "One-time payment",
+              "Full source code",
+              "Basic SEO setup",
+              "Mobile responsive"
+            ];
+            break;
+          case 'STARTER PLAN':
+            description = "Everything you need to get started with a professional website";
+            features = [
+              "Essential Website Features",
+              "User Authentication",
+              "Basic Dashboard",
+              "Email Integration",
+              "Payment Processing"
+            ];
+            break;
+          case 'Extra Changes Add-on':
+            description = "Need more frequent updates? Get additional monthly changes with priority handling";
+            features = [
+              "Additional monthly changes",
+              "Priority support",
+              "Quick turnaround",
+              "Flexible updates"
+            ];
+            break;
+          case 'Booking System Add-on':
+            description = "Let your customers book appointments and services directly through your website";
+            features = [
+              "Online booking system",
+              "Calendar integration",
+              "Automated scheduling",
+              "Email notifications"
+            ];
+            break;
+          case 'Content Manager Add-on':
+            description = "Easily manage your website content with a powerful content management system";
+            features = [
+              "Content Management System",
+              "Media Library",
+              "Content Analytics",
+              "SEO Tools"
+            ];
+            break;
+          case 'User Accounts Add-on':
+            description = "Add member-only areas and user authentication to your website";
+            features = [
+              "User authentication",
+              "Member profiles",
+              "Role management",
+              "Secure access control"
+            ];
+            break;
+          case 'E-Commerce Add-on':
+            description = "Turn your website into a full-featured online store with shopping cart, payment processing, and inventory management";
+            features = [
+              "Product management",
+              "Shopping cart",
+              "Secure payments",
+              "Inventory tracking",
+              "Order management"
+            ];
+            break;
+        }
+
+        return {
+          id: product.id,
+          name: product.name,
+          description: description || product.description || '',
+          features,
+          isAddon: product.metadata?.type === 'addon',
+          isSubscription: !!monthlyPrice || !!yearlyPrice,
+          monthlyPrice: monthlyPrice ? {
+            id: monthlyPrice.id,
+            amount: monthlyPrice.unit_amount ? monthlyPrice.unit_amount / 100 : 0,
+            currency: monthlyPrice.currency
+          } : null,
+          yearlyPrice: yearlyPrice ? {
+            id: yearlyPrice.id,
+            amount: yearlyPrice.unit_amount ? yearlyPrice.unit_amount / 100 : 0,
+            currency: yearlyPrice.currency
+          } : null,
+          oneTimePrice: oneTimePrice ? {
+            id: oneTimePrice.id,
+            amount: oneTimePrice.unit_amount ? oneTimePrice.unit_amount / 100 : 0,
+            currency: oneTimePrice.currency
+          } : null,
+          defaultPrice: product.default_price ? {
+            id: typeof product.default_price === 'string' 
+              ? product.default_price 
+              : product.default_price.id,
+            amount: typeof product.default_price === 'string'
+              ? 0
+              : (product.default_price.unit_amount || 0) / 100,
+            currency: typeof product.default_price === 'string'
+              ? 'usd'
+              : product.default_price.currency
+          } : null,
+          metadata: product.metadata || {},
+          isOwned
+        };
+      } catch (error) {
+        console.error('Error transforming product:', product.id, error);
+        return null;
+      }
+    }).filter(Boolean);
+
+    // Sort products: BUY A WEBSITE first, then STARTER PLAN, then add-ons
+    const sortedProducts = transformedProducts.sort((a, b) => {
+      if (a.name === 'BUY A WEBSITE') return -1;
+      if (b.name === 'BUY A WEBSITE') return 1;
+      if (a.name === 'STARTER PLAN') return -1;
+      if (b.name === 'STARTER PLAN') return 1;
+      return 0;
+    });
+
+    return NextResponse.json(sortedProducts);
+  } catch (error) {
+    console.error('Unhandled error in prices endpoint:', error);
     return NextResponse.json(
-      { 
-        error: "Failed to fetch prices",
-        details: error.message 
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

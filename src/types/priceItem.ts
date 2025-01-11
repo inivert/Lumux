@@ -11,4 +11,5 @@ export interface Price {
 	icon2?: string;
 	active?: boolean;
 	isAddon?: boolean;
+	isOwned?: boolean;
 }

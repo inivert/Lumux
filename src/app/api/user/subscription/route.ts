@@ -30,16 +30,16 @@ function getDetailedSubscriptionStatus(subscription: Stripe.Subscription): strin
 export async function GET() {
     try {
         const session = await getServerSession(authOptions);
-        if (!session) {
+        if (!session?.user?.email) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        // Get user with subscription
+        // Get user with subscription using email
         const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { email: session.user.email },
             include: { subscription: true }
         });
 
@@ -244,72 +244,54 @@ export async function GET() {
         }
 
         // Transform payment methods and invoices
-        try {
-            const response = {
-                hasSubscription: subscriptionData.length > 0,
-                subscriptions: subscriptionData,
-                paymentMethods: paymentMethods.data.map(pm => ({
-                    id: pm.id,
-                    brand: pm.card?.brand,
-                    last4: pm.card?.last4,
-                    expMonth: pm.card?.exp_month,
-                    expYear: pm.card?.exp_year,
-                    isDefault: subscriptionData.some(s => s.defaultPaymentMethod === pm.id)
-                })),
-                invoices: invoices.data.map(invoice => ({
-                    id: invoice.id,
-                    number: invoice.number,
-                    amount: invoice.amount_paid,
-                    currency: invoice.currency,
-                    status: invoice.status,
-                    date: invoice.created,
-                    pdfUrl: invoice.invoice_pdf
-                })),
-                upcomingInvoice: upcomingInvoice ? {
-                    amount: upcomingInvoice.amount_due,
-                    currency: upcomingInvoice.currency,
-                    date: upcomingInvoice.next_payment_attempt,
-                    lineItems: upcomingInvoice.lines.data.map(item => {
-                        const product = typeof item.price?.product === 'string'
-                            ? { name: 'Unknown Product' }
-                            : item.price?.product;
-                        
-                        return {
-                            description: product?.name || item.description,
-                            amount: item.amount,
-                            currency: item.currency,
-                            period: {
-                                start: item.period.start,
-                                end: item.period.end
-                            }
-                        };
-                    }).filter(item => item.amount > 0)
-                } : null
-            };
+        const paymentMethodsData = paymentMethods.data.map(pm => ({
+            id: pm.id,
+            brand: pm.card?.brand || 'unknown',
+            last4: pm.card?.last4 || '****',
+            expMonth: pm.card?.exp_month || 0,
+            expYear: pm.card?.exp_year || 0,
+            isDefault: pm.id === subscriptions.data[0]?.default_payment_method?.id
+        }));
 
-            console.log('Response prepared:', {
-                hasSubscription: response.hasSubscription,
-                paymentMethodsCount: response.paymentMethods.length,
-                invoicesCount: response.invoices.length,
-                hasUpcomingInvoice: !!response.upcomingInvoice
-            });
+        const invoicesData = invoices.data.map(invoice => ({
+            id: invoice.id,
+            number: invoice.number || '',
+            amount: invoice.amount_paid,
+            currency: invoice.currency,
+            status: invoice.status,
+            date: invoice.created,
+            pdfUrl: invoice.invoice_pdf || null
+        }));
 
-            return NextResponse.json(response);
-        } catch (error) {
-            console.error('Error preparing response:', error);
-            return NextResponse.json(
-                { 
-                    error: 'Error preparing response',
-                    details: error instanceof Error ? error.message : 'Unknown error'
-                },
-                { status: 500 }
-            );
-        }
+        // Transform upcoming invoice
+        const upcomingInvoiceData = upcomingInvoice ? {
+            amount: upcomingInvoice.amount_due,
+            currency: upcomingInvoice.currency,
+            date: upcomingInvoice.next_payment_attempt || upcomingInvoice.created,
+            lineItems: upcomingInvoice.lines.data.map(item => ({
+                description: item.description || '',
+                amount: item.amount,
+                currency: item.currency,
+                period: {
+                    start: item.period.start,
+                    end: item.period.end
+                }
+            }))
+        } : null;
+
+        return NextResponse.json({
+            hasSubscription: subscriptionData.length > 0,
+            subscriptions: subscriptionData,
+            paymentMethods: paymentMethodsData,
+            invoices: invoicesData,
+            upcomingInvoice: upcomingInvoiceData
+        });
+
     } catch (error) {
         console.error('Unexpected error:', error);
         return NextResponse.json(
             { 
-                error: 'Unexpected error',
+                error: 'An unexpected error occurred',
                 details: error instanceof Error ? error.message : 'Unknown error'
             },
             { status: 500 }
