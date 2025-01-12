@@ -98,7 +98,11 @@ export async function GET() {
         });
         
         if (user?.products) {
-          userProducts = user.products;
+          // Convert products to array format
+          userProducts = [
+            ...(user.products.mainPlan ? [user.products.mainPlan] : []),
+            ...user.products.addons
+          ].filter(Boolean);
         }
         
         console.log(`Retrieved ${userProducts.length} user products`);
