@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { Product, Price } from '@/types/product';
@@ -186,7 +186,7 @@ const ProductsGrid = () => {
         } else if (status === 'unauthenticated') {
             setOwnedProducts([]);
         }
-    }, [status, session?.user?.id]);
+    }, [status, session?.user?.id, fetchOwnedProducts]);
 
     const fetchProducts = async () => {
         try {
@@ -201,7 +201,7 @@ const ProductsGrid = () => {
         }
     };
 
-    const fetchOwnedProducts = async () => {
+    const fetchOwnedProducts = useCallback(async () => {
         try {
             const response = await axios.get('/api/user/products', {
                 withCredentials: true,
@@ -237,7 +237,7 @@ const ProductsGrid = () => {
             }
             setOwnedProducts([]);
         }
-    };
+    }, [status]);
 
     // Filter products based on billing type (with null check)
     const visibleProducts = (products || []).filter(p => {

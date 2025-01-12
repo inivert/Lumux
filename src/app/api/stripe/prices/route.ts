@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/libs/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
@@ -45,7 +46,7 @@ export async function GET() {
     // Get the current session
     let session;
     try {
-      session = await getAuthSession();
+      session = await getServerSession(authOptions);
       console.log('Session retrieved:', session ? 'exists' : 'null');
     } catch (error) {
       console.error('Error getting session:', error);
