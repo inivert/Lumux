@@ -14,9 +14,9 @@ export default async function SettingsPage() {
 		<div className='p-6'>
 			<h1 className='text-2xl font-bold mb-4'>Account Settings</h1>
 			<EditProfile initialData={{
-				name: session.user.name,
-				email: session.user.email,
-				websiteName: session.user.websiteName
+				name: session.user.name || null,
+				email: session.user.email || null,
+				websiteName: session.user.websiteName || null
 			}} />
 		</div>
 	);

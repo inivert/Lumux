@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/libs/auth";
-import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { prisma } from "@/libs/prisma";
+import { stripe } from "@/libs/stripe";
 
 interface PriceData {
   id: string;

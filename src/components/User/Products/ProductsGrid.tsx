@@ -182,11 +182,48 @@ const ProductsGrid = () => {
 
     useEffect(() => {
         if (status === 'authenticated' && session?.user?.id) {
+            const fetchOwnedProducts = async () => {
+                try {
+                    const response = await axios.get('/api/user/products', {
+                        withCredentials: true,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        }
+                    });
+                    setOwnedProducts(response.data.products.map((p: any) => p.id));
+                } catch (error: any) {
+                    console.error('Error fetching owned products:', error);
+                    const errorMessage = error.response?.data?.error || 'Failed to load your products';
+                    const errorCode = error.response?.data?.code;
+
+                    if (error.response?.status === 401) {
+                        if (status === 'authenticated') {
+                            toast.error('Your session has expired. Please refresh the page.');
+                        }
+                    } else if (error.response?.status === 404) {
+                        toast.error('User profile not found. Please try signing out and back in.');
+                    } else if (errorCode === 'STRIPE_CONFIG_ERROR') {
+                        toast.error('Payment service is not properly configured. Please contact support.');
+                    } else if (errorCode === 'STRIPE_AUTH_ERROR') {
+                        toast.error('Payment service authentication failed. Please contact support.');
+                    } else if (errorCode === 'STRIPE_CONNECTION_ERROR') {
+                        toast.error('Unable to connect to payment service. Please try again later.');
+                    } else if (errorCode === 'STRIPE_ERROR') {
+                        toast.error('Payment service is temporarily unavailable. Please try again later.');
+                    } else if (errorCode === 'DATABASE_ERROR') {
+                        toast.error('Database service is temporarily unavailable. Please try again later.');
+                    } else {
+                        toast.error(errorMessage);
+                    }
+                    setOwnedProducts([]);
+                }
+            };
             fetchOwnedProducts();
         } else if (status === 'unauthenticated') {
             setOwnedProducts([]);
         }
-    }, [status, session?.user?.id, fetchOwnedProducts]);
+    }, [status, session?.user?.id]);
 
     const fetchProducts = async () => {
         try {
@@ -200,44 +237,6 @@ const ProductsGrid = () => {
             setLoading(false);
         }
     };
-
-    const fetchOwnedProducts = useCallback(async () => {
-        try {
-            const response = await axios.get('/api/user/products', {
-                withCredentials: true,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                }
-            });
-            setOwnedProducts(response.data.products.map((p: any) => p.id));
-        } catch (error: any) {
-            console.error('Error fetching owned products:', error);
-            const errorMessage = error.response?.data?.error || 'Failed to load your products';
-            const errorCode = error.response?.data?.code;
-
-            if (error.response?.status === 401) {
-                if (status === 'authenticated') {
-                    toast.error('Your session has expired. Please refresh the page.');
-                }
-            } else if (error.response?.status === 404) {
-                toast.error('User profile not found. Please try signing out and back in.');
-            } else if (errorCode === 'STRIPE_CONFIG_ERROR') {
-                toast.error('Payment service is not properly configured. Please contact support.');
-            } else if (errorCode === 'STRIPE_AUTH_ERROR') {
-                toast.error('Payment service authentication failed. Please contact support.');
-            } else if (errorCode === 'STRIPE_CONNECTION_ERROR') {
-                toast.error('Unable to connect to payment service. Please try again later.');
-            } else if (errorCode === 'STRIPE_ERROR') {
-                toast.error('Payment service is temporarily unavailable. Please try again later.');
-            } else if (errorCode === 'DATABASE_ERROR') {
-                toast.error('Database service is temporarily unavailable. Please try again later.');
-            } else {
-                toast.error(errorMessage);
-            }
-            setOwnedProducts([]);
-        }
-    }, [status]);
 
     // Filter products based on billing type (with null check)
     const visibleProducts = (products || []).filter(p => {
