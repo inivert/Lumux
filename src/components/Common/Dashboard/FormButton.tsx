@@ -1,35 +1,28 @@
-import React from 'react';
-import Loader from '../Loader';
+import { ReactNode } from 'react';
 
-interface FormButtonProps {
-	loading?: boolean;
-	text: string;
+export interface FormButtonProps {
+	text?: string;
+	children?: ReactNode;
+	height?: string;
 	disabled?: boolean;
-	className?: string;
+	onClick?: () => void;
 }
 
-const FormButton = ({
-	loading = false,
-	text,
+const FormButton: React.FC<FormButtonProps> = ({ 
+	text, 
+	children, 
+	height = '40px',
 	disabled = false,
-	className = "",
-}: FormButtonProps) => {
+	onClick 
+}) => {
 	return (
 		<button
-			type="submit"
-			disabled={disabled || loading}
-			className={`inline-flex items-center justify-center gap-2.5 rounded-lg bg-primary px-6 py-4 font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-gray-3 dark:disabled:bg-strokedark ${className} transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50`}
+			className="w-full bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50"
+			style={{ height }}
+			disabled={disabled}
+			onClick={onClick}
 		>
-			{loading ? (
-				<>
-					<span className="h-5 w-5">
-						<Loader />
-					</span>
-					<span>Processing...</span>
-				</>
-			) : (
-				<span>{text}</span>
-			)}
+			{text || children}
 		</button>
 	);
 };

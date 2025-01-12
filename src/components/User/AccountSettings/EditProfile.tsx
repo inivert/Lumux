@@ -111,7 +111,6 @@ export default function EditProfile({ initialData = { name: null, email: null, w
 							placeholder='Enter your full name'
 							value={name}
 							handleChange={handleChange}
-							className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
 						/>
 						<div className="absolute right-3 top-[38px] text-gray-400">
 							<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -130,7 +129,6 @@ export default function EditProfile({ initialData = { name: null, email: null, w
 							placeholder='Enter your website name'
 							value={websiteName}
 							handleChange={handleChange}
-							className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
 						/>
 						<div className="absolute right-3 top-[38px] text-gray-400">
 							<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -144,10 +142,8 @@ export default function EditProfile({ initialData = { name: null, email: null, w
 
 				<div className="flex justify-end pt-4">
 					<FormButton
-						loading={loading}
 						text="Save Changes"
-						disabled={!name && !websiteName}
-						className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+						disabled={loading}
 					/>
 				</div>
 			</form>

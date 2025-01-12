@@ -7,8 +7,11 @@ import { Metadata } from "next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CodeLumus",
-  description: "Professional Website Management Service",
+  title: "Codelumus",
+  description: "Your modern web development solution",
+  ...(process.env.NEXT_PUBLIC_APP_URL && {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL)
+  }),
   icons: {
     icon: [
       {

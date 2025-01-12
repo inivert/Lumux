@@ -4,6 +4,8 @@ import { authOptions } from '@/libs/auth';
 import { stripe } from '@/libs/stripe';
 import { prisma } from '@/libs/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         // Get session

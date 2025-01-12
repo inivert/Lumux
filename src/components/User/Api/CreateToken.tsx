@@ -3,11 +3,22 @@ import Card from "@/components/Common/Dashboard/Card";
 import FormButton from "@/components/Common/Dashboard/FormButton";
 import InputGroup from "@/components/Common/Dashboard/InputGroup";
 import { createApiKey } from "@/actions/api-key";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function CreateToken() {
 	const ref = useRef<HTMLFormElement>(null);
+	const [tokenName, setTokenName] = useState("");
+
+	const handleSubmit = async (formData: FormData) => {
+		try {
+			await createApiKey(tokenName);
+			toast.success("Token created successfully");
+			setTokenName("");
+		} catch (error) {
+			toast.error("Unable to create token");
+		}
+	};
 
 	return (
 		<div className='lg:w-2/6'>
@@ -21,16 +32,7 @@ export default function CreateToken() {
 
 				<form
 					ref={ref}
-					action={async (formData) => {
-						try {
-							await createApiKey(formData.get("token") as string);
-							toast.success("Token created successfully");
-						} catch (error) {
-							toast.error("Unable to create token");
-						}
-
-						ref.current?.reset();
-					}}
+					action={handleSubmit}
 					className='space-y-5.5'
 				>
 					<InputGroup
@@ -39,9 +41,11 @@ export default function CreateToken() {
 						placeholder='Enter a token name'
 						type='text'
 						required={true}
+						value={tokenName}
+						handleChange={(e) => setTokenName(e.target.value)}
 					/>
 
-					<FormButton>Create Token</FormButton>
+					<FormButton text="Create Token" />
 				</form>
 			</Card>
 		</div>

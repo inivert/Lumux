@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Card from "@/components/Common/Card";
 import InputGroup from "@/components/Common/Dashboard/InputGroup";
-import FormButton from "@/components/Common/FormButton";
+import FormButton from "@/components/Common/Dashboard/FormButton";
 import Loader from "@/components/Common/Loader";
 
 export default function SetupPassword() {

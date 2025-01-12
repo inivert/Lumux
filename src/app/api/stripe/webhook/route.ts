@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import Stripe from 'stripe';
+import { Prisma } from "@prisma/client";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -75,11 +76,11 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
             where: { userId: user.id },
             create: {
                 userId: user.id,
-                mainPlan: mainPlanItem ? JSON.stringify(mainPlanItem) : null,
+                mainPlan: mainPlanItem ? JSON.stringify(mainPlanItem) : Prisma.JsonNull,
                 addons: addonItems.map(addon => JSON.stringify(addon))
             },
             update: {
-                mainPlan: mainPlanItem ? JSON.stringify(mainPlanItem) : null,
+                mainPlan: mainPlanItem ? JSON.stringify(mainPlanItem) : Prisma.JsonNull,
                 addons: addonItems.map(addon => JSON.stringify(addon))
             }
         });
@@ -177,7 +178,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         await prisma.userProducts.update({
             where: { userId: user.id },
             data: {
-                mainPlan: mainPlanItem ? JSON.stringify(mainPlanItem) : null,
+                mainPlan: mainPlanItem ? JSON.stringify(mainPlanItem) : Prisma.JsonNull,
                 addons: addonItems.map(addon => JSON.stringify(addon))
             }
         });
@@ -251,7 +252,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
         await prisma.userProducts.update({
             where: { userId: user.id },
             data: {
-                mainPlan: updatedMainPlan ? JSON.stringify(updatedMainPlan) : null,
+                mainPlan: updatedMainPlan ? JSON.stringify(updatedMainPlan) : Prisma.JsonNull,
                 addons: updatedAddons.map(addon => JSON.stringify(addon))
             }
         });
@@ -315,4 +316,6 @@ export async function POST(req: Request) {
             { status: 400 }
         );
     }
-} 
+}
+
+export const dynamic = 'force-dynamic'; 

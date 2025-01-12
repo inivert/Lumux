@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 function getInitials(name: string): string {
     if (!name) return "U";
     return name

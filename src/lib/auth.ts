@@ -20,10 +20,21 @@ export const authOptions: NextAuthOptions = {
                 // Get or create Stripe customer
                 const customer = await prisma.user.findUnique({
                     where: { id: user.id },
-                    select: { stripeCustomerId: true }
+                    select: {
+                        id: true,
+                        email: true,
+                        customerId: true,
+                        subscription: {
+                            select: {
+                                stripeCustomerId: true
+                            }
+                        }
+                    }
                 });
 
-                if (!customer?.stripeCustomerId) {
+                const stripeCustomerId = customer?.customerId || customer?.subscription?.stripeCustomerId;
+
+                if (!stripeCustomerId) {
                     // Create new Stripe customer
                     const stripeCustomer = await stripe.customers.create({
                         email: session.user.email!,
@@ -36,7 +47,7 @@ export const authOptions: NextAuthOptions = {
                     // Update user with Stripe customer ID
                     await prisma.user.update({
                         where: { id: user.id },
-                        data: { stripeCustomerId: stripeCustomer.id }
+                        data: { customerId: stripeCustomer.id }
                     });
                 }
             }

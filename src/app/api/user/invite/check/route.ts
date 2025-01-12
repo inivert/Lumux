@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 			data: {
 				email: email,
 				name: email.split("@")[0],
-				role: "user",
+				role: "USER",
 			},
 		});
 

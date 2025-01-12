@@ -3,8 +3,8 @@ import HeaderWrapper from "@/components/Header/HeaderWrapper";
 import FooterWrapper from "@/components/Footer/FooterWrapper";
 
 export const metadata: Metadata = {
-	title: 'Lumux',
-	description: 'Lumux Application',
+	title: 'Codelumus',
+	description: 'Codelumus Application',
 };
 
 export default function SiteLayout({

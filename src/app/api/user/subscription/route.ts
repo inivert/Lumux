@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/libs/auth';
 import { stripe } from '@/libs/stripe';
 import { prisma } from '@/libs/prisma';
+import type { Stripe } from 'stripe';
+
+export const dynamic = 'force-dynamic';
 
 // Helper function to get detailed subscription status
 function getDetailedSubscriptionStatus(subscription: Stripe.Subscription): string {
@@ -40,20 +43,20 @@ export async function GET() {
         // Get user with subscription using email
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            include: { subscription: true }
+            select: {
+                id: true,
+                customerId: true,
+                subscription: {
+                    select: {
+                        stripeCustomerId: true
+                    }
+                }
+            }
         });
 
-        if (!user) {
-            return NextResponse.json(
-                { error: 'User not found' },
-                { status: 404 }
-            );
-        }
+        const stripeCustomerId = user?.customerId || user?.subscription?.stripeCustomerId;
 
-        const customerId = user.customerId || user.subscription?.stripeCustomerId;
-        console.log('Customer ID:', { exists: !!customerId });
-
-        if (!customerId) {
+        if (!stripeCustomerId) {
             return NextResponse.json({
                 hasSubscription: false,
                 subscription: null,
@@ -61,6 +64,17 @@ export async function GET() {
                 invoices: [],
                 upcomingInvoice: null
             });
+        }
+
+        let subscriptions: Stripe.ApiList<Stripe.Subscription>;
+        try {
+            subscriptions = await stripe.subscriptions.list({
+                customer: stripeCustomerId,
+                expand: ['data.default_payment_method', 'data.items.data.price.product']
+            });
+        } catch (error) {
+            console.error('Error fetching subscriptions:', error);
+            return NextResponse.json({ error: "Failed to fetch subscriptions" }, { status: 500 });
         }
 
         // Check if Stripe is properly initialized
@@ -73,67 +87,24 @@ export async function GET() {
         }
 
         // Fetch all required data
-        let subscriptions;
         let paymentMethods;
         let invoices;
         let upcomingInvoice;
 
         try {
-            // First, fetch subscriptions
-            subscriptions = await stripe.subscriptions.list({
-                customer: customerId,
-                status: 'active',
-                expand: ['data.default_payment_method', 'data.latest_invoice', 'data.plan.product']
-            });
-
-            // If we have subscriptions, fetch all product details
-            if (subscriptions.data.length > 0) {
-                // Get unique product IDs from all subscriptions
-                const productIds = new Set(
-                    subscriptions.data.flatMap(subscription =>
-                        subscription.items.data.map(item =>
-                            typeof item.price.product === 'string' ? item.price.product : item.price.product.id
-                        )
-                    )
-                );
-
-                // Fetch all products in parallel
-                const products = await Promise.all(
-                    Array.from(productIds).map(productId => stripe.products.retrieve(productId))
-                );
-
-                // Create a map of product details
-                const productMap = new Map(
-                    products.map(product => [product.id, product])
-                );
-
-                // Attach product details to all subscription items
-                subscriptions.data.forEach(subscription => {
-                    subscription.items.data.forEach(item => {
-                        const productId = typeof item.price.product === 'string'
-                            ? item.price.product
-                            : item.price.product.id;
-                        const product = productMap.get(productId);
-                        if (product) {
-                            item.price.product = product;
-                        }
-                    });
-                });
-            }
-
             // Then fetch remaining data in parallel
             [paymentMethods, invoices, upcomingInvoice] = await Promise.all([
                 stripe.paymentMethods.list({
-                    customer: customerId,
+                    customer: stripeCustomerId,
                     type: 'card'
                 }),
                 stripe.invoices.list({
-                    customer: customerId,
+                    customer: stripeCustomerId,
                     limit: 5,
                     status: 'paid'
                 }),
                 stripe.invoices.retrieveUpcoming({
-                    customer: customerId,
+                    customer: stripeCustomerId,
                     expand: ['lines.data.price.product'],
                     subscription_items: subscriptions.data.flatMap(sub => 
                         sub.items.data.map(item => ({
@@ -145,7 +116,7 @@ export async function GET() {
                 }).catch((error) => {
                     console.error('Error fetching upcoming invoice:', {
                         error,
-                        customerId,
+                        customerId: stripeCustomerId,
                         subscriptionCount: subscriptions.data.length
                     });
                     return null;
@@ -207,7 +178,9 @@ export async function GET() {
                     cancelAtPeriodEnd: subscription.cancel_at_period_end,
                     cancelAt: subscription.cancel_at,
                     trialEnd: subscription.trial_end,
-                    defaultPaymentMethod: subscription.default_payment_method?.id,
+                    defaultPaymentMethod: typeof subscription.default_payment_method === 'string' 
+                        ? subscription.default_payment_method 
+                        : subscription.default_payment_method?.id,
                     items: subscription.items.data.map(item => {
                         const product = typeof item.price.product === 'string'
                             ? { id: item.price.product, name: 'Unknown Product' }
@@ -217,7 +190,11 @@ export async function GET() {
                             id: item.id,
                             priceId: item.price.id,
                             productId: product.id,
-                            productName: product.name,
+                            productName: typeof product === 'string' 
+                                ? '' 
+                                : 'name' in product 
+                                    ? product.name 
+                                    : '',
                             amount: item.price.unit_amount,
                             currency: item.price.currency,
                             interval: item.price.recurring?.interval || 'one-time',
@@ -250,7 +227,11 @@ export async function GET() {
             last4: pm.card?.last4 || '****',
             expMonth: pm.card?.exp_month || 0,
             expYear: pm.card?.exp_year || 0,
-            isDefault: pm.id === subscriptions.data[0]?.default_payment_method?.id
+            isDefault: typeof pm === 'string' 
+                ? false 
+                : pm.id === (typeof subscriptions.data[0]?.default_payment_method === 'string' 
+                    ? subscriptions.data[0]?.default_payment_method 
+                    : subscriptions.data[0]?.default_payment_method?.id)
         }));
 
         const invoicesData = invoices.data.map(invoice => ({
